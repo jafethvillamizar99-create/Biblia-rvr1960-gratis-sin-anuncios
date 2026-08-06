@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Biblia Reina Valera 1960 - Interactiva</title>
+<style>
+:root{
+--bg: #f7f4ef;
+--fg: #2b2b2b;
+--sidebar-bg: #e8e2d9;
+--accent: #8b5a2b;
+--accent-light: #b07d4b;
+--card: #ffffff;
+--border: #d4cfc7;
+--shadow:rgba(0,0,0,0.08);
+--verse-num: #8b5a2b;
+--chapter-btn-bg: #f0ebe3;
+--chapter-btn-active: #8b5a2b;
+--chapter-btn-active-fg: #fff;
+--hover: #ddd6cc;
+--font-main: 'Georgia', 'Times New Roman',serif;
+--font-ui: 'Segoe UI',system-ui,sans-serif;
+}
+[data-theme="dark"] {
+--bg: #1e1e1e;
+--fg: #e0dcd6;
+--sidebar-bg: #2a2a2a;
+--accent: #c9a86c;
+--accent-light: #e0c48e;
+--card: #2e2e2e;
+--border: #444;
+--shadow:rgba(0,0,0,0.3);
+--verse-num: #c9a86c;
+--chapter-btn-bg: #3a3a3a;
+--chapter-btn-active: #c9a86c;
+--chapter-btn-active-fg: #1e1e1e;
+--hover: #444;
+}
+[data-font-family="sans"] {
+--font-main: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial,sans-serif;
+}
+[data-font-family="mono"] {
+--font-main: 'Courier New', 'Lucida Console',monospace;
+}
+*{ box-sizing:border-box;margin: 0;padding: 0; }
+body{
+font-family:var(--font-main);
+background:var(--bg);
+color:var(--fg);
+display:flex;
+height: 100vh;
+overflow:hidden;
+transition:background 0.3s, color 0.3s;
+}
+
+/* ==== SIDEBAR ==== */
+#sidebar {
+width: 280px;
+background:var(--sidebar-bg);
+border-right: 1px solid var(--border);
+display:flex;
+flex-direction:column;
+transition:transform 0.35s cubic-bezier(.4,0,.2,1),width 0.35s cubic-bezier(.4,0,.2,1);
+position: relative;
+z-index: 10;
+flex-shrink: 0;
+}
+#sidebar.hidden{
+transform:translateX(-100%);
+width: 0;
+border-right:none;
+overflow:hidden;
+}
+#sidebar-header {
+padding: 14px 16px;
+border-bottom: 1px solid var(--border);
+display:flex;
+align-items: center;
+justify-content:space-between;
+gap: 8px;
+}
+#sidebar-header h2 {
+font-family:var(--font-ui);
+font-size: 1.05rem;
+font-weight: 600;
+color:var(--accent);
+white-space:nowrap;
+}
+#toggle-sidebar-btn {
+background:var(--card);
+border: 1px solid var(--border);
+border-radius: 6px;
+width: 32px;
+height: 32px;
+cursor: pointer;
+display:flex;
+align-items: center;
+justify-content: center;
+color:var(--accent);
+font-size: 1.1rem;
+transition:background 0.2s;
+flex-shrink: 0;
+}
+#toggle-sidebar-btn:hover{background:var(--hover); }
+
+/*Boton flotante para mostrar sidebar cuando esta oculto */
+#show-sidebar-btn {
+position:fixed;
+top: 14px;
+left: 14px;
+z-index: 50;
+background:var(--accent);
+color: #fff;
+border:none;
+border-radius: 8px;
+width: 44px;
+height: 44px;
+cursor: pointer;
+display:none;
+align-items: center;
+justify-content: center;
+font-size: 1.2rem;
+box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+transition:background 0.2s,transform 0.2s;
+}
+#show-sidebar-btn:hover{background:var(--accent-light);transform:scale(1.05); }
+#show-sidebar-btn.visible{display:flex; }
+
+/*Overlay para cerrar el sidebar en movil*/
+#sidebar-overlay {
+display:none;
+position:fixed;
+inset: 0;
+background:rgba(0,0,0,0.45);
+z-index: 9;
+opacity: 0;
+transition:opacity 0.35s ease;
+}
+#sidebar-overlay.visible{
+display: block;
+opacity: 1;
+}
+
+#book-search {
+padding: 10px 16px;
+border-bottom: 1px solid var(--border);
+}
+#book-search input {
+width: 100%;
+padding: 8px 12px;
+border-radius: 8px;
+border: 1px solid var(--border);
+background:var(--card);
+color:var(--fg);
+font-family:var(--font-ui);
+font-size: 0.9rem;
+outline:none;
+}
+#book-search input:focus{border-color:var(--accent); }
+#book-list {
+flex: 1;
+overflow-y: auto;
+padding: 8px 0 20px 0;
+-webkit-overflow-scrolling: touch;
+}
+.book-item{
+padding: 9px 20px;
+cursor: pointer;
+font-size: 0.92rem;
+border-left: 3px solid transparent;
+transition:background 0.15s,border-color 0.15s;
+font-family:var(--font-ui);
+}
+.book-item:hover{background:var(--hover); }
+.book-item.active{background:var(--hover);border-left-color:var(--accent);font-weight: 600; }
+.book-group-label{
+padding: 10px 16px 4px;
+font-size: 0.7rem;
+text-transform:uppercase;
+letter-spacing: 1px;
+color:var(--accent);
+font-family:var(--font-ui);
+font-weight: 700;
+opacity: 0.7;
+}
+
+/* ==== MAIN AREA ==== */
+#main {
+flex: 1;
+display:flex;
+flex-direction:column;
+min-width: 0;
+position: relative;
+}
+#topbar {
+padding: 10px 18px;
+border-bottom: 1px solid var(--border);
+background:var(--sidebar-bg);
+display:flex;
+align-items: center;
+gap: 10px;
+flex-wrap:wrap;
+font-family:var(--font-ui);
+min-height: 56px;
+}
+#topbar-left-spacer{width: 0;transition:width 0.35s;flex-shrink: 0; }
+#topbar-left-spacer.sidebar-hidden{width: 44px; }
+#topbar h1 {
+font-size: 1.15rem;
+font-weight: 600;
+color:var(--accent);
+flex: 1 1 auto;
+min-width: 120px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+#topbar-controls {
+display:flex;
+align-items: center;
+gap: 8px;
+flex-wrap:wrap;
+justify-content:flex-end;
+flex: 1 1 auto;
+}
+.top-btn{
+background:var(--card);
+border: 1px solid var(--border);
+border-radius: 6px;
+padding: 8px 12px;
+cursor: pointer;
+font-size: 0.9rem;
+color:var(--fg);
+font-family:var(--font-ui);
+transition:background 0.2s;
+min-height: 36px;
+display:inline-flex;
+align-items: center;
+justify-content: center;
+}
+.top-btn:hover{background:var(--hover); }
+#search-box {
+display:flex;
+gap: 6px;
+align-items: center;
+flex: 1 1 auto;
+min-width: 140px;
+}
+#search-box input {
+padding: 8px 10px;
+border-radius: 6px;
+border: 1px solid var(--border);
+background:var(--card);
+color:var(--fg);
+font-size: 0.9rem;
+font-family:var(--font-ui);
+outline:none;
+min-width: 120px;
+width: 100%;
+min-height: 36px;
+}
+#search-box input:focus{border-color:var(--accent); }
+
+/* ==== CHAPTER TABS ==== */
+#chapter-bar {
+display:flex;
+gap: 6px;
+padding: 10px 16px;
+border-bottom: 1px solid var(--border);
+background:var(--bg);
+overflow-x: auto;
+white-space:nowrap;
+scrollbar-width:thin;
+-webkit-overflow-scrolling:touch;
+}
+#chapter-bar::-webkit-scrollbar{height: 6px; }
+#chapter-bar::-webkit-scrollbar-thumb{background:var(--border);border-radius: 3px; }
+.chapter-tab{
+padding: 8px 16px;
+border-radius: 20px;
+border: 1px solid var(--border);
+background:var(--chapter-btn-bg);
+color:var(--fg);
+cursor: pointer;
+font-size: 0.9rem;
+font-family:var(--font-ui);
+transition:background 0.2s, color 0.2s,border-color 0.2s;
+flex-shrink: 0;
+min-height: 36px;
+display:inline-flex;
+align-items: center;
+justify-content: center;
+}
+.chapter-tab:hover{background:var(--hover); }
+.chapter-tab.active{
+background:var(--chapter-btn-active);
+color:var(--chapter-btn-active-fg);
+border-color:var(--chapter-btn-active);
+font-weight: 600;
+}
+
+/* ==== CONTENT ==== */
+#content {
+flex: 1;
+overflow-y: auto;
+padding: 28px 32px;
+scroll-behavior:smooth;
+-webkit-overflow-scrolling:touch;
+}
+#content-title {
+font-size: 1.6rem;
+font-weight: 700;
+margin-bottom: 18px;
+color:var(--accent);
+font-family:var(--font-ui);
+}
+.verse{
+margin-bottom: 14px;
+line-height: 1.75;
+font-size: 1.15rem;
+text-align:justify;
+}
+.verse-num{
+font-weight: 700;
+color:var(--verse-num);
+margin-right: 6px;
+font-size: 0.85em;
+vertical-align: super;
+font-family:var(--font-ui);
+}
+.verse-highlight{background:rgba(201,168,108,0.25);border-radius: 4px;padding: 0 2px; }
+
+/* ==== NAV BUTTONS ==== */
+#nav-buttons {
+display:flex;
+justify-content:space-between;
+padding: 12px 18px;
+border-top: 1px solid var(--border);
+background:var(--sidebar-bg);
+gap: 10px;
+}
+.nav-btn{
+background:var(--card);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 10px 16px;
+cursor: pointer;
+font-size: 0.9rem;
+color:var(--fg);
+font-family:var(--font-ui);
+transition:background 0.2s;
+display:flex;
+align-items: center;
+justify-content: center;
+gap: 6px;
+flex: 1 1 auto;
+min-height: 44px;
+text-align: center;
+}
+.nav-btn:hover{background:var(--hover); }
+.nav-btn:disabled{opacity: 0.4; cursor:not-allowed; }
+
+/* ==== FONT SIZES ==== */
+[data-font="fs-small"] .verse{font-size: 1rem; }
+[data-font="fs-normal"] .verse{font-size: 1.15rem; }
+[data-font="fs-large"] .verse{font-size: 1.35rem; }
+
+/* ==== SEARCH RESULTS ==== */
+.search-result{
+padding: 12px 14px;
+border-bottom: 1px solid var(--border);
+cursor: pointer;
+transition:background 0.15s;
+border-radius: 6px;
+}
+.search-result:hover{background:var(--hover); }
+.search-ref{font-weight: 700; color:var(--accent);font-family:var(--font-ui);font-size: 0.9rem; }
+.search-snippet{font-size: 0.95rem;margin-top: 4px; line-height: 1.5; }
+
+/* ==== LOADING ==== */
+#loading {
+position:fixed;
+inset: 0;
+background:var(--bg);
+display:flex;
+flex-direction:column;
+align-items: center;
+justify-content: center;
+z-index: 100;
+gap: 16px;
+}
+#loading p{font-family:var(--font-ui); color:var(--accent);font-size: 1.1rem; }
+.spinner{
+width: 44px;height: 44px;
+border: 4px solid var(--border);
+border-top-color:var(--accent);
+border-radius: 50%;
+animation: spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg); }}
+
+/* ==== SCROLLBAR ==== */
+::-webkit-scrollbar{width: 8px;height: 8px; }
+::-webkit-scrollbar-track{background:transparent; }
+::-webkit-scrollbar-thumb{background:var(--border);border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover{background:var(--accent); }
+
+/* ==== BOTÓN FLOTANTE MÓVIL VOLVER A LECTURA ==== */
+#mobile-back-btn {
+display:none;
+position:fixed;
+bottom: 20px;
+right: 20px;
+z-index: 50;
+background:var(--accent);
+color: #fff;
+border:none;
+border-radius: 50%;
+width: 56px;
+height: 56px;
+cursor: pointer;
+align-items: center;
+justify-content: center;
+font-size: 1.3rem;
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+transition:background 0.2s,transform 0.2s;
+}
+#mobile-back-btn:hover{background:var(--accent-light);transform:scale(1.05); }
+@media (max-width: 768px) {
+#mobile-back-btn.visible{display:flex; }
+}
+
+/* ==== RESPONSIVE ==== */
+@media (max-width: 1024px) {
+#sidebar{width: 260px; }
+#content{padding: 24px 28px; }
+#topbar{padding: 10px 16px; }
+}
+@media (max-width: 768px) {
+#sidebar {
+position:fixed;
+top: 0;
+left: 0;
+height: 100%;
+min-height: 100vh;
+min-height: -webkit-fill-available;
+width: 280px;
+max-width: 80vw;
+z-index: 20;
+transform:translateX(-100%);
+border-right:none;
+box-shadow: 2px 0 16px rgba(0,0,0,0.25);
+}
+#sidebar:not(.hidden){transform:translateX(0); }
+#sidebar.hidden{transform:translateX(-100%);width: 280px; }
+#show-sidebar-btn.visible{display:flex; }
+#topbar{padding: 10px 14px; gap: 8px; }
+#topbar h1{font-size: 1.05rem; min-width: 100px; }
+#topbar-controls{ gap: 6px; }
+#search-box{ min-width: 100px;max-width: 160px; }
+#search-box input{ min-width: 80px;font-size: 0.85rem; }
+.top-btn{padding: 8px 10px;font-size: 0.85rem; }
+#chapter-bar{padding: 8px 12px; }
+.chapter-tab{padding: 7px 13px;font-size: 0.85rem; }
+#content{padding: 20px 18px; }
+#content-title{font-size: 1.4rem; }
+.verse{font-size: 1.1rem; line-height: 1.7; }
+#nav-buttons{padding: 10px 12px; }
+.nav-btn{padding: 10px 12px;font-size: 0.85rem; min-height: 44px; }
+.book-item{padding: 10px 18px;font-size: 0.95rem; }
+.book-group-label{padding: 12px 16px 6px; }
+#book-list { padding: 8px 0 80px 0; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 480px) {
+body{font-size: 15px; }
+#show-sidebar-btn{ top: 10px;left: 10px;width: 42px;height: 42px; }
+#topbar{padding: 8px 12px; min-height: 52px; }
+#topbar-left-spacer.sidebar-hidden{width: 38px; }
+#topbar h1{font-size: 1rem; min-width: 0;max-width: 45%; }
+#topbar-controls{ gap: 5px;flex: 1 1 auto; }
+#search-box{ min-width: 0;max-width: 120px; }
+#search-box input{padding: 7px 8px; min-width: 0;font-size: 0.8rem; }
+.top-btn{padding: 7px 9px; min-height: 34px;font-size: 0.8rem; }
+#chapter-bar{padding: 6px 10px; gap: 4px; }
+.chapter-tab{padding: 6px 12px;font-size: 0.8rem; min-height: 32px; }
+#content{padding: 16px 14px; }
+#content-title{font-size: 1.25rem;margin-bottom: 14px; }
+.verse{font-size: 1rem; line-height: 1.65;margin-bottom: 12px; }
+.verse-num{font-size: 0.8em; }
+#nav-buttons{padding: 8px 10px; gap: 6px; }
+.nav-btn{padding: 8px 8px;font-size: 0.75rem; min-height: 40px; gap: 3px; }
+.book-item{padding: 10px 18px;font-size: 0.95rem; }
+.book-group-label{padding: 12px 16px 6px; }
+#book-list { padding: 8px 0 80px 0; }
+}
+@media (max-width: 360px) {
+#topbar h1{max-width: 40%;font-size: 0.9rem; }
+#search-box{max-width: 95px; }
+#search-box input{font-size: 0.75rem; }
+.top-btn{padding: 6px 8px;font-size: 0.75rem; }
+.nav-btn{font-size: 0.7rem; }
+.verse{font-size: 0.95rem; }
+}
+@media (max-height: 500px) and (orientation:landscape) {
+#sidebar{width: 240px;max-width: 70vw; }
+#topbar{ min-height: 48px;padding: 6px 12px; }
+#content{padding: 14px 16px; }
+}
+@media (min-width: 1440px) {
+#sidebar{width: 300px; }
+#content{padding: 32px 40px; }
+.verse{font-size: 1.2rem; }
+}
+/* ==== BIOGRAFÍAS DE LOS LIBROS ==== */
+.book-bio {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 20px 22px;
+  margin-bottom: 26px;
+  line-height: 1.75;
+  font-size: 1.05rem;
+  text-align: justify;
+  color: var(--fg);
+}
+.book-bio h3 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.book-bio p {
+  margin-bottom: 12px;
+}
+.book-bio p:last-child {
+  margin-bottom: 0;
+}
+/* ==== MODAL BIOGRAFÍA ==== */
+.bio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  transition: background 0.2s, color 0.2s;
+}
+.bio-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+#bio-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#bio-modal.visible {
+  display: flex;
+}
+#bio-modal-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-width: 760px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 24px 28px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+#bio-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  color: var(--accent);
+  cursor: pointer;
+  line-height: 1;
+}
+#bio-modal-body {
+  line-height: 1.75;
+  font-size: 1.05rem;
+  text-align: justify;
+  color: var(--fg);
+}
+#bio-modal-body h3 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+#bio-modal-body p {
+  margin-bottom: 12px;
+}
+#bio-modal-body p:last-child {
+  margin-bottom: 0;
+}
+@media (max-width: 768px) {
+  #bio-modal-content {
+    max-height: 85vh;
+    padding: 20px;
+  }
+}
+</style>
+</head>
+<body data-font="normal">
+
+<div id="loading">
+<div class="spinner"></div>
+<p>Cargando Biblia Reina Valera 1960…</p>
+</div>
+
+<button id="show-sidebar-btn" title="Mostrar libros">📖</button>
+
+<aside id="sidebar">
+<div id="sidebar-header">
+<h2>📚 Libros</h2>
+<button id="toggle-sidebar-btn" title="Ocultar libros">◀</button>
+</div>
+<div id="book-search">
+<input type="text" id="book-filter" placeholder="Buscar libro…">
+</div>
+<div id="book-list"></div>
+</aside>
+
+<div id="sidebar-overlay"></div>
+
+<main id="main">
+<div id="topbar">
+<div id="topbar-left-spacer"></div>
+<h1 id="current-title">Biblia RVR1960</h1>
+<div id="topbar-controls">
+<div id="search-box">
+<input type="text" id="search-input" placeholder="Buscar palabra o ref…">
+<button class="top-btn" id="search-btn">🔍</button>
+</div>
+<button class="top-btn" id="font-family-btn" title="Tipo de letra">🔤</button>
+<button class="top-btn" id="theme-btn" title="Modo oscuro">🌙</button>
+</div>
+</div>
+
+<div id="chapter-bar"></div>
+
+<div id="content">
+<div id="content-title"></div>
+<div id="verses"></div>
+</div>
+
+<div id="nav-buttons">
+<button class="nav-btn" id="prev-chapter">◀ Capítulo anterior</button>
+<button class="nav-btn" id="back-to-reading" style="display:none;">⬅ Volver a lectura</button>
+<button class="nav-btn" id="next-chapter">Capítulo siguiente ▶</button>
+</div>
+</main>
+
+<button id="mobile-back-btn" title="Volver a lectura">📖</button>
+
+<div id="bio-modal">
+  <div id="bio-modal-content">
+    <button id="bio-modal-close" title="Cerrar">×</button>
+    <div id="bio-modal-body"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const BIBLE_URL = 'https://raw.githubusercontent.com/dscottpi/bibles/master/RVR1960%20-%20Spanish.json';
+let bible=null;
+let books= [];
+let currentBook=null;
+let currentChapter= 1;
+let fontSize= 'normal';
+let sidebarVisible= true;
+let fontFamily= 'serif';
+
+const loading=document.getElementById('loading');
+const sidebar=document.getElementById('sidebar');
+const sidebarOverlay=document.getElementById('sidebar-overlay');
+const toggleSidebarBtn=document.getElementById('toggle-sidebar-btn');
+const showSidebarBtn=document.getElementById('show-sidebar-btn');
+const topbarSpacer=document.getElementById('topbar-left-spacer');
+const bookList=document.getElementById('book-list');
+const bookFilter=document.getElementById('book-filter');
+const chapterBar=document.getElementById('chapter-bar');
+const contentTitle=document.getElementById('content-title');
+const versesDiv=document.getElementById('verses');
+const currentTitle=document.getElementById('current-title');
+const searchInput=document.getElementById('search-input');
+const searchBtn=document.getElementById('search-btn');
+const prevBtn=document.getElementById('prev-chapter');
+const nextBtn=document.getElementById('next-chapter');
+const backBtn=document.getElementById('back-to-reading');
+const themeBtn=document.getElementById('theme-btn');
+const fontFamilyBtn=document.getElementById('font-family-btn');
+const mobileBackBtn=document.getElementById('mobile-back-btn');
+
+const bookOrder= [
+'Génesis','Éxodo','Levítico','Números','Deuteronomio','Josué','Jueces','Rut',
+'1 Samuel','2 Samuel','1 Reyes','2 Reyes','1 Crónicas','2 Crónicas','Esdras','Nehemías','Ester',
+'Job','Salmos','Proverbios','Eclesiastés','Cantares','Isaías','Jeremías','Lamentaciones',
+'Ezequiel','Daniel','Oseas','Joel','Amós','Abdías','Jonás','Miqueas','Nahúm','Habacuc',
+'Sofonías','Hageo','Zacarías','Malaquías',
+'Mateo','Marcos','Lucas','Juan','Hechos','Romanos','1 Corintios','2 Corintios',
+'Gálatas','Efesios','Filipenses','Colosenses','1 Tesalonicenses','2 Tesalonicenses',
+'1 Timoteo','2 Timoteo','Tito','Filemón','Hebreos','Santiago','1 Pedro','2 Pedro',
+'1 Juan','2 Juan','3 Juan','Judas','Apocalipsis'
+];
+
+const bookBios = {
+  "Génesis": "<h3>Biografía — Génesis</h3>\n<p>Autor tradicional: Moisés (atribuido). Fecha estimada: c. 1445–1400 a.C. Capítulos: 50. Género: Narrativa histórica/teológica.</p>\n<p>Génesis constituye el cimiento teológico y literario de toda la Biblia. Su título proviene del griego génesis (origen, génesis), mientras que en hebreo se denomina Bereshit (&quot;En el principio&quot;). El libro se divide estructuralmente en dos grandes bloques: la historia universal (capítulos 1–11) y la historia patriarcal (capítulos 12–50).</p>\n<p>La sección inicial narra la creación del universo en seis días literarios, culminando con la institución del sábado (2:1–3). Se detalla la formación del hombre (adam) a imagen de Dios, la creación de Eva del costado de Adán y la instalación de ambos en el Edén. El relato del fracaso humano se manifiesta en la caída (cap. 3), seguida de la expansión del pecado: el asesinato de Abel por Caín (cap. 4), la genealogía antediluviana (cap. 5) y la corrupción universal que provoca el diluvio (caps. 6–9). Dios preserva a Noé, a su familia y a especies animales mediante un arca de maderas específicas (gofer) y dimensiones precisas: 300 codos de largo, 50 de ancho y 30 de alto (6:15). Tras el diluvio, Dios establece un pacto universal signado por el arcoíris (9:12–17). La torre de Babel (cap. 11) explica la diversificación lingüística de la humanidad.</p>\n<p>La segunda mitad se centra en Abraham (Abram), al que Dios llama desde Ur de los caldeos (c. 2000 a.C.) con una promesa triple: tierra, descendencia y bendición universal (12:1–3). Se narran los pactos formales (cap. 15 y 17), la circuncisión como sello del pacto (17:9–14) y el nacimiento milagroso de Isaac (21:1–7). La prueba extrema del sacrificio de Isaac (cap. 22) constituye el clímax teológico del patriarcado. Los ciclos subsiguientes abarcan a Isaac, Jacob (cuyo nombre cambia a Israel tras luchar con Dios en Peniel, cap. 32) y los doce hijos que originan las tribus. El relato de José (caps. 37–50) describe su venta como esclavo a Egipto, su ascenso a visir del faraón, la administración durante siete años de abundancia y siete de hambre, y la reconciliación final con sus hermanos. Génesis cierra con la muerte de José (c. 1805 a.C.) y la esperanza del éxodo.</p>\n<p>Temas clave: Creación ex nihilo, imago Dei, pecado universal, gracia salvífica, pacto, fe, providencia y bendición para las naciones.</p>",
+  "Éxodo": "<h3>Biografía — Éxodo</h3>\n<p>Autor tradicional: Moisés. Fecha estimada: c. 1445 a.C. Capítulos: 40. Género: Narrativa histórica/legal.</p>\n<p>Éxodo (hebreo Shemot, &quot;nombres&quot;) registra la transición del pueblo hebreo de esclavos en Egipto a nación teocrática en el Sinaí. Los primeros capítulos (1–4) describen la opresión bajo un faraón &quot;que no conocía a José&quot; (1:8), el nacimiento de Moisés, su adopción por la hija del faraón, su exilio a Madián y la teofanía de la zarza ardiente (3:1–4:17). Dios se revela como Yahvéh (YHWH, 3:14), identidad que sella el pacto con Israel.</p>\n<p>Los capítulos 5–13 narran las diez plagas contra Egipto: agua convertida en sangre, ranas, piojos, moscas, peste mortandad de ganado, úlceras, granizo, langostas, tinieblas y muerte de primogénitos (12:29). La Pascua se instituye como memorial perpetuo (12:1–28). El éxodo propiamente dicho (caps. 13–18) cubre el cruce del Mar Rojo (o de los Juncos, 14:21–31), la destrucción del ejército egipcio, el cántico de Moisés y Miriam, el suministro de maná y codornices, y la victoria sobre Amalec en Refidim (17:8–16).</p>\n<p>El bloque central (caps. 19–24) describe la llegada al monte Sinaí, la teofanía con truenos y relámpagos, y la entrega del Decálogo (20:1–17). El Código de la Alianza (21:1–23:33) regula esclavitud, homicidio, lesiones personales, propiedad, restitución y justicia social. La ceremonia de ratificación (24:1–8) incluye la aspersión de sangre sobre el pueblo.</p>\n<p>Los capítulos 25–40 detallan las instrucciones para el Tabernáculo: sus cortinas de lino fino, su estructura de madera de acacia, el Arca del Pacto con querubines de oro, el propiciatorio, la mesa de los panes, el candelabro de siete brazos, el altar de bronce, el atrio y las vestiduras sacerdotales de Aarón (efod, pectoral, urim y tumin). El libro culmina con la construcción por Bezalel y Oholiab, y la gloria de Yahvéh que llena el Tabernáculo (40:34–38).</p>\n<p>Temas clave: Redención, revelación, ley, pacto, santidad, presencia divina y mediación.</p>",
+  "Levítico": "<h3>Biografía — Levítico</h3>\n<p>Autor tradicional: Moisés. Fecha estimada: c. 1445–1400 a.C. Capítulos: 27. Género: Legal/ritual.</p>\n<p>Levítico (hebreo Vayikrá, &quot;y llamó&quot;) se desarrolla en el Tabernáculo. Tras la entrega de la ley, el libro sistematiza el culto y la santidad. Los capítulos 1–7 establecen los cinco tipos de sacrificios: holocausto (olah), ofrenda de cereal (minjá), sacrificio de paz (shelem), ofrenda por el pecado (jatat) y ofrenda por la culpa (asham). Cada uno tiene procedimientos específicos de presentación, inmolación, sangre y porciones para sacerdotes.</p>\n<p>Los capítulos 8–10 describen la consagración sacerdotal de Aarón y sus hijos, la investidura, las ofrendas de ordenación y el fuego consumidor que valida el culto. La tragedia de Nadab y Abihú (10:1–3), muertos por ofrecer fuego extraño, subraya la santidad ritual.</p>\n<p>La ley de la pureza (caps. 11–16) abarca animales limpios e inmundos (11:1–47), pureza postparto (12), lepra y afecciones cutáneas (13–14), y emisiones corporales (15). El Día de la Expiación (Yom Kippur, cap. 16) es el rito más solemne: el sumo sacerdote entra en el Lugar Santísimo con sangre de buey y macho cabrío, se envía un macho cabrío a Azazel (el desierto) y se purifica el santuario y el pueblo.</p>\n<p>El código de santidad (caps. 17–26) prohíbe la sangre, regula relaciones sexuales, exige amor al prójimo (19:18), establece el año sabático (25:1–7) y el año de jubileo (25:8–55), con la liberación de deudas y esclavos. La bendición y la maldición (cap. 26) condicionan la permanencia en la tierra. El libro cierra con votos y dedicaciones (cap. 27).</p>\n<p>Temas clave: Santidad, sacrificio, mediación sacerdotal, expiación, jubileo y separación.</p>",
+  "Números": "<h3>Biografía — Números</h3>\n<p>Autor tradicional: Moisés. Fecha estimada: c. 1445–1400 a.C. Capítulos: 36. Género: Narrativa histórica/legal.</p>\n<p>Números (hebreo Bamidbar, &quot;en el desierto&quot;) cubre los 38 años de peregrinación desde el Sinaí hasta Moab. Los primeros capítulos (1–4) registran el censo de los hombres de guerra (603.550 en el primer censo, 1:46), la organización tribal en cuatro campamentos y las funciones levíticas (coatitas, guersonitas, meraritas). Los capítulos 5–6 tratan la pureza, la prueba de la mujer sospechosa de adulterio (sotá) y el voto de nazareo (incluyendo a Sansón y Samuel).</p>\n<p>Los capítulos 7–10 narran la dedicación de los príncipes, la instalación de los levitas, la celebración de la Pascua y el inicio de la marcha con la nube y el fuego. La rebelión (caps. 11–14) incluye la murmuración por la carne (11:4–35), la envidia de Miriam y Aarón contra Moisés (12), la exploración de Canaán por doce espías, el informe negativo y la condena a vagar 40 años (14:33–34). Los capítulos 15–19 añaden leyes complementarias, la rebelión de Coré, Datán y Abiram (16), la prueba de las varas de Aarón (17) y la ley de la vaquilla roja (19).</p>\n<p>La segunda generación (caps. 20–36) muestra la muerte de Miriam, el pecado de Moisés en la roca de Meribá (20:1–13), la victoria sobre Edom, Moab y los amorreos, la sublevación de Balaam (22–24) y la idolatría de Baal-peor (25). El segundo censo (26:1–65) arroja 601.730 hombres. Sigue la sucesión de Josué (27), la ofrenda diaria y los votos (28–30), la venganza sobre Madián (31), la petición de las hijas de Zelofehad (36) y la distribución de la tierra prometida.</p>\n<p>Temas clave: Peregrinación, juicio por incredulidad, segunda generación, lealtad y esperanza.</p>",
+  "Deuteronomio": "<h3>Biografía — Deuteronomio</h3>\n<p>Autor tradicional: Moisés. Fecha estimada: c. 1400 a.C. Capítulos: 34. Género: Discurso/legal/testamento.</p>\n<p>Deuteronomio (hebreo Devarim, &quot;palabras&quot;) es un sermón de Moisés en las llanuras de Moab, antes de su muerte. Los primeros discursos (caps. 1–4) recapitulan la historia desde el Horeb hasta el presente, enfatizando la fidelidad de Dios y la rebelión del pueblo. El discurso central (caps. 5–11) reitera el Decálogo (5:6–21), el Shema Israel (6:4–9) y la exigencia de exclusividad de culto.</p>\n<p>El código deuteronomómico (caps. 12–26) regula el lugar de culto centralizado, la prohibición de idolatría, la dieta, la limpieza de deudas cada siete años, el año de jubileo, los juicios penales, la guerra y la ofrenda de primicias. La ley del rey (17:14–20) limita sus esposas, caballos y riquezas. El capítulo 28 presenta las bendiciones y maldiciones del pacto: lluvia, cosecha y salud vs. enfermedad, derrota y exilio. Los capítulos 29–30 son una renovación de la alianza con la promesa de restauración tras la apostasía.</p>\n<p>La última sección (caps. 31–34) contiene el canto de Moisés (32), la bendición de las tribus (33), la muerte de Moisés en el Nebo (34:1–8) y el luto por 30 días. Deuteronomio establece la base teológica del resto de la historia bíblica: obediencia produce bendición, apostasía produce juicio.</p>\n<p>Temas clave: Pacto, ley, amor a Dios, elección, centralización del culto y legado.</p>",
+  "Josué": "<h3>Biografía — Josué</h3>\n<p>Autor tradicional: Josué (con posible edición posterior). Fecha estimada: c. 1400–1370 a.C. Capítulos: 24. Género: Narrativa histórica.</p>\n<p>Josué narra la conquista y distribución de Canaán. Tras la muerte de Moisés, Josué asume el liderazgo (1:1–9). La entrada en la tierra se sella con el cruce milagroso del Jordán (cap. 3–4) y la circuncisión en Gilgal (5:2–9). La conquista de Jericó (cap. 6) sigue un ritual de marcha diaria durante seis días y siete vueltas el séptimo, con gritos y trompetas. El pecado de Acán (cap. 7) provoca la derrota en Hai, pero tras su ejecución, la ciudad cae (cap. 8).</p>\n<p>La alianza se renueva en el monte Ebal y Gerizim (8:30–35). La estrategia continúa con la conquista del sur (cap. 10: la batalla de Gabaón con el sol detenido) y el norte (cap. 11: Hazor destruido por fuego). Los capítulos 13–21 detallan la distribución territorial entre las tribus, las ciudades de refugio y las ciudades levíticas. Josué 20 enumera seis ciudades de refugio: Cedes, Siquem, Hebrón, Bezér, Ramot y Golan. El capítulo 24 registra la asamblea de Siquem, la reprensión a los antepasados idólatras y la famosa elección del pueblo: &quot;Nosotros serviremos a Jehová&quot; (24:15). Josué muere a los 110 años y es sepultado en Timnat-sera.</p>\n<p>Temas clave: Conquista, fidelidad al pacto, herencia territorial, elección y unidad.</p>",
+  "Jueces": "<h3>Biografía — Jueces</h3>\n<p>Autor tradicional: Anónimo (posiblemente Samuel). Fecha estimada: c. 1050–1000 a.C. Capítulos: 21. Género: Narrativa histórica.</p>\n<p>Jueces cubre el periodo entre la muerte de Josué y la instauración de la monarquía, aproximadamente 350 años (c. 1370–1050 a.C.). El refrán estructural domina el libro: &quot;Hicieron los hijos de Israel lo malo ante los ojos de Jehová... y Jehová los entregó en manos de...&quot;. Este ciclo de apostasía, opresión, clamor y liberación se repite para doce jueces (mayores y menores).</p>\n<p>Otoniel libera de Cusán-risataim (3:7–11). Ehud asesina a Eglón, rey de Moab (3:12–30). Débora, profetisa, y Barac derrotan a Sísara en el monte Tabor (caps. 4–5; el canto de Débora es uno de los poemas más antiguos de la Biblia). Gedeón rechaza la realeza, pero su hijo Abimelec proclama un reino efímero en Siquem (caps. 6–9). Tola, Jaír, Jefté (con el voto trágico de su hija, cap. 11), Izán, Elón, Abdón y Sansón (caps. 13–16) siguen. La historia de Rut se sitúa en este periodo (Jueces 17–21: la idolatría de Micaía, la guerra contra Benjamín, la masacre de Gabaa y la captura de mujeres en Silo).</p>\n<p>El libro ilustra la anarquía moral: &quot;En aquellos días no había rey en Israel; cada uno hacía lo que bien le parecía&quot; (17:6; 21:25).</p>\n<p>Temas clave: Ciclos de pecado, liderazgo carismático, deidad, anarquía y necesidad de realeza.</p>",
+  "Rut": "<h3>Biografía — Rut</h3>\n<p>Autor tradicional: Anónimo (tradición atribuye a Samuel). Fecha estimada: c. 1050–1010 a.C. Capítulos: 4. Género: Narrativa histórica/novella.</p>\n<p>Rut es un relato breve pero densamente teológico. Durante una hambruna en Belén, Elimelec y su esposa Noemí emigran a Moab con sus hijos Majlón y Quelión. Los tres hombres mueren, dejando viudas a Noemí, Rut y Orfa. Noemí regresa a Belén; Rut se aferra a ella con el célebre juramento: &quot;Adonde tú fueres, iré yo... tu pueblo será mi pueblo, y tu Dios mi Dios&quot; (1:16).</p>\n<p>Rut espiga en los campos de Boaz, pariente de Elimelec y hombre rico de la tribu de Judá. Boaz ejerce el goel (redentor del levirato) y, tras resolver la prioridad con otro pariente (el de la sandalia, 4:7–8), se casa con Rut y engendran a Obed, padre de Isaí, padre de David. La genealogía final (4:18–22) vincula a Rut con el linaje mesiánico.</p>\n<p>Temas clave: Lealtad, hesed (amor leal), redención, inclusión de los gentiles y linaje del Mesías.</p>",
+  "1 Samuel": "<h3>Biografía — 1 Samuel</h3>\n<p>Autor tradicional: Anónimo. Fecha estimada: c. 1050–1010 a.C. Capítulos: 31. Género: Narrativa histórica.</p>\n<p>1 Samuel registra la transición del teocracia a la monarquía. Ana, estéril, ora en Silo y el sumo sacerdote Elí promete un hijo: Samuel, dedicado como nazareo al servicio del Tabernáculo (caps. 1–2). Las visiones de Samuel y la caída de la casa de Elí por la corrupción de Ofni y Finees (cap. 4) marcan el inicio de una nueva era.</p>\n<p>Samuel juzga a Israel y derrota a los filisteos en Mizpa (cap. 7). El pueblo exige rey para ser como las otras naciones (cap. 8). Dios concede a Saúl, hijo de Cis, de la tribu de Benjamín, ungido por Samuel en secreto (cap. 9–10). Saúl reina 42 años y logra victorias sobre Amón (cap. 11), pero desobedece en Gilgal ofreciendo sacrificio ilegal (13:8–14) y viola el herem contra Amalec (15:1–35). Samuel unge a David en Belén (16:1–13). David entra a la corte real, derrota a Goliat (cap. 17), se hace amigo de Jonatán y es perseguido por un Saúl celoso (caps. 18–24). David se refugia con los filisteos de Gat (cap. 27). Saúl consulta a la hechicera de Endor (cap. 28) y muere en Gilboa junto con Jonatán (31:1–6).</p>\n<p>Temas clave: Monarquía, obediencia vs. sacrificio, ungión, persecución y amistad.</p>",
+  "2 Samuel": "<h3>Biografía — 2 Samuel</h3>\n<p>Autor tradicional: Anónimo. Fecha estimada: c. 1010–970 a.C. Capítulos: 24. Género: Narrativa histórica.</p>\n<p>David es ungido rey sobre Judá en Hebrón (2:1–4) y luego sobre todo Israel (5:1–5). Conquista la fortaleza de los jebuseos, Jerusalén (5:6–10), y trae el Arca del Pacto a la capital (cap. 6). El pacto davídico (cap. 7) promete una dinastía eterna, un hijo que construirá el templo y un reino establecido para siempre.</p>\n<p>David amplía el imperio venciendo a filisteos, moabitas, amonitas, edomitas, sirios y amalecitas (caps. 8–10). El adulterio con Betsabé y el asesinato de Urías el hitita (cap. 11) introducen el juicio: la espada no se apartará de la casa de David. Amnón viola a Tamar y es asesinado por Absalón (cap. 13). Absalón se rebela, ocupa Jerusalén y duerme con las concubinas de David en el terrado (cap. 15–16). Joab mata a Absalón (18:9–15). La rebelión de Seba (cap. 20) y la hambruna de tres años (21:1–14) siguen. El canto de David (22) y las últimas palabras (23:1–7) cierran el reinado. El censo pecaminoso (24) trae peste sobre Israel; David compra la era de Arauna para construir el altar que será el emplazamiento del templo.</p>\n<p>Temas clave: Pacto davídico, pecado y arrepentimiento, sucesión, justicia y alabanza.</p>",
+  "1 Reyes": "<h3>Biografía — 1 Reyes</h3>\n<p>Autor tradicional: Anónimo (posible edición deuteronomista). Fecha estimada: c. 970–853 a.C. (hasta 2 Reyes termina en 586 a.C.). Capítulos: 22. Género: Narrativa histórica/profética.</p>\n<p>1 Reyes comienza con la muerte de David y la ascensión de Salomón (1–2). Salomón ejecuta a Adonías, Joab y Simeí. Pide sabiduría en Gabaón (3:5–14) y la demuestra en el juicio de las dos prostitutas (3:16–28). El reinado es de paz y prosperidad: alianza con Hiram de Tiro, construcción del templo (caps. 5–7) y del palacio real. El templo, inaugurado en el año 11 del reinado (c. 959 a.C.), mide 60 codos de largo, 20 de ancho y 30 de alto. El Shejináh llena la casa durante la dedicación (8:10–11). La oración de dedicación (8:22–53) es teológicamente central.</p>\n<p>Salomón se desvía por sus 700 esposas y 300 concubinas extranjeras, que le tiran al idólatra (11:1–8). El reino se divide tras su muerte (c. 931 a.C.): Jeroboam gobierna Israel (10 tribus) y Roboam Judá (2 tribus). Jeroboam instala becerros de oro en Dan y Betel (12:28–30). Los profetas Elías y Eliseo dominan la segunda mitad: Elías anuncia la sequía (17:1), alimenta a la viuda de Sarepta (17:7–16), resucita a su hijo (17:17–24), desafía a los 450 profetas de Baal en el Carmelo (cap. 18), huye al Horeb (19) y unge a Eliseo. Acab y Jezabel oprimen a Nabot para su viñedo (cap. 21). Elías es llevado al cielo en un carro de fuego (2:1–12, en 2 Reyes, pero la narrativa de Elías termina en 2 Reyes 2). 1 Reyes cierra con la muerte de Acab en Ramot de Galaad (cap. 22).</p>\n<p>Temas clave: Sabiduría, apostasía, división del reino, profecía y juicio.</p>",
+  "2 Reyes": "<h3>Biografía — 2 Reyes</h3>\n<p>Autor tradicional: Anónimo (deuteronomista). Fecha estimada: c. 853–586 a.C. Capítulos: 25. Género: Narrativa histórica/profética.</p>\n<p>2 Reyes continúa con la sucesión de Elías a Eliseo (cap. 2), quien realiza el doble de milagros: el agua sanada (2:19–22), la maldición de los muchachos (2:23–25), la provisiones para la viuda (4:1–7), la resurrección del hijo de la sunamita (4:8–37), la sanidad de Naamán el sirio (5:1–19) y la flotación del hacha (6:1–7). Eliseo profetiza la muerte de Ben-adad y la ascensión de Hazael (8:7–15).</p>\n<p>La historia dinástica sigue: Joás, Amasías, Uzías, Jotam, Acaz, Ezequías, Manasés, Amón y Josías en Judá; y una sucesión de reyes malos en Israel (Jehú, Joacaz, Joás, Jeroboam II, Zacarías, Salum, Menajem, Pekaías, Peka, Oseas). Jehú extermina la casa de Acab y Jezabel (9:1–10:28). Eliseo muere y un hombre resucita al tocar sus huesos (13:20–21). Ezequías reforma el culto y celebra la Pascua (18:1–12). La invasión de Senaquerib (c. 701 a.C.) y la destrucción del ejército asirio (19:35) salvan a Jerusalén. Manasés revierte la reforma (21:1–18). Josías descubre el libro de la ley (c. 622 a.C.) e instaura la mayor reforma deuteronomista (cap. 22–23). El reino de Judá cae bajo Joacaz, Joacim, Joaquín y Sedequías. Nabucodonosor de Babilonia asedia Jerusalén, destruye el templo (586 a.C.) y deporta a los judíos (cap. 24–25). El gobernador babilónico Gedalías es asesinado y Joaquín es liberado de la prisión (25:27–30).</p>\n<p>Temas clave: Juicio, exilio, reforma, profecía cumplida y perseverancia de la dinastía davídica.</p>",
+  "1 Crónicas": "<h3>Biografía — 1 Crónicas</h3>\n<p>Autor tradicional: Esdras (tradicional). Fecha estimada: c. 450–400 a.C. Capítulos: 29. Género: Genealogía/narrativa histórica.</p>\n<p>1 Crónicas es una edición sacerdotal de la historia de Judá. Los primeros nueve capítulos son puras genealogías: desde Adán hasta las familias de las tribus, con énfasis en Leví, los cantores del templo y las familias reales de Judá y Benjamín. El propósito es legitimar el templo y la adoración postexílica.</p>\n<p>La narrativa comienza con la muerte de Saúl (cap. 10). David es ungido y conquista Jerusalén (11:1–9). El traslado del Arca (13; 15–16) y el intento fallido de Uza (13:9–10) preceden la organización del culto. David establece los turnos levíticos, los porteros, los cantores y los músicos (caps. 23–26). Prepara materiales para el templo (29:1–5) y nombra a Salomón sucesor. David muere &quot;en buena vejez, lleno de días, riquezas y honra&quot; (29:28). El tono omiti los pecados de David (Betsabé, Absalón) para enfocarse en la institución del culto.</p>\n<p>Temas clave: Legitimación del templo, adoración organizada, linaje davídico y unidad de Israel.</p>",
+  "2 Crónicas": "<h3>Biografía — 2 Crónicas</h3>\n<p>Autor tradicional: Esdras (tradicional). Fecha estimada: c. 450–400 a.C. Capítulos: 36. Género: Narrativa histórica.</p>\n<p>2 Crónicas sigue la historia de Salomón y los reyes de Judá. La construcción del templo (caps. 2–7) se describe con detalles técnicos: los pilares Jachín y Boaz, el mar de bronce, los carros y los utensilios. La dedicación (cap. 7) incluye la teofanía y la promesa de perdón si el pueblo se humilla.</p>\n<p>La división del reino (cap. 10) y la guerra contra Jeroboam (11–12) inician la historia de Judá. Roboam, Abías, Asa, Josafat, Joram, Ocozías, Atalía, Joás, Amasías, Uzías, Jotam, Acaz, Ezequías, Manasés, Amón y Josías son evaluados según su fidelidad al templo. Josafat envía levitas a enseñar la ley (17:7–9). Joás repara el templo con un cofre de ofrendas (24:4–14). Ezequías celebra la Pascua con Israel y Judá (30:1–27) y organiza los sacerdotes y levitas (31:2–21). Manasés es capturado por los asirios, se humilla y restaura (33:10–17). Josías celebra la Pascua más grande desde Samuel (35:18). La caída de Jerusalén (cap. 36) y el edicto de Ciro (36:22–23) conectan con Esdras.</p>\n<p>Temas clave: Templo, reforma, adoración, restauración y soberanía divina sobre las naciones.</p>",
+  "Esdras": "<h3>Biografía — Esdras</h3>\n<p>Autor tradicional: Esdras. Fecha estimada: c. 458–400 a.C. Capítulos: 10. Género: Narrativa histórica.</p>\n<p>Esdras combina dos historias: el regreso de Zorobabel y los exiliados bajo Ciro (c. 538 a.C.) y la misión de Esdras (c. 458 a.C.). Los primeros capítulos (1–2) narran el decreto de Ciro (1:1–4), el inventario de los utensilios del templo y el censo de 42.360 repatriados (2:64–65). Zorobabel y Josué el sumo sacerdote lideran la reconstrucción del altar (3:1–6) y los cimientos del templo (3:8–13). La oposición de los samaritanos (4:1–5) logra una suspensión temporal. Los profetas Ageo y Zacarías impulsan la reanudación (5:1–2). Darío I confirma el decreto de Ciro (6:1–12) y el templo se inaugura en el año 515 a.C. (6:15–18).</p>\n<p>Esdras, escriba y sacerdote de la línea de Aarón, llega con una comisión real de Artajerjes I (7:1–26). Se dedica a enseñar la ley, a establecer jueces y a reprender los matrimonios mixtos con paganas (cap. 9–10). La confesión pública (9:5–15) y el pacto de divorcio colectivo (10:1–44) buscan preservar la identidad étnica y religiosa del remanente.</p>\n<p>Temas clave: Restauración, ley, identidad, matrimonio puro y liderazgo sacerdotal.</p>",
+  "Nehemías": "<h3>Biografía — Nehemías</h3>\n<p>Autor tradicional: Nehemías. Fecha estimada: c. 445–420 a.C. Capítulos: 13. Género: Memoria/narrativa histórica.</p>\n<p>Nehemías, copero de Artajerjes I en Susa, recibe noticias de la ruina de Jerusalén y obtiene permiso para reconstruir las murallas (1:1–2:8). Llega en el año 445 a.C. con escolta militar y madera real. La reconstrucción (cap. 3) asigna secciones específicas a familias, sacerdotes, artesanos y levitas. La oposición de Sanbalat el horonita, Tobías el amonita y Gesem el árabe (2:19; 4:1–9) incluye burla, conspiración y amenazas. Nehemías organiza guardias armadas que trabajan con espada en mano (4:16–18). La explotación interna de los pobres por los ricos (cap. 5) es denunciada y corregida. La muralla se termina en 52 días (6:15), un logro militar y logístico notable.</p>\n<p>Nehemías regresa a Susa (cap. 13) y, en una segunda visita, reprime la corrupción: expulsa a Tobías del cuarto del templo (13:4–9), restablece los salarios levíticos (13:10–14), impide el tráfico en sábado (13:15–22) y disuelve los matrimonios mixtos, incluso entre la familia del sumo sacerdote Joiadá y Sanbalat (13:23–31). El libro cierra con una oración de justificación personal (13:31).</p>\n<p>Temas clave: Liderazgo, oposición, unidad, santo sábado y pureza comunitaria.</p>",
+  "Ester": "<h3>Biografía — Ester</h3>\n<p>Autor tradicional: Anónimo (posiblemente Mordecai o un judío persa). Fecha estimada: c. 460–350 a.C. Capítulos: 10. Género: Narrativa histórica/novella.</p>\n<p>Ester se sitúa durante el reinado de Asuero (Jerjes I, 486–465 a.C.). La reina Vasti es depuesta por desobedecer al rey (cap. 1). Ester, joven judía huérfana criada por su primo Mordecai, es elegida reina en un concurso de belleza que dura doce meses de preparación con perfumes y aceites (2:1–18). Mordecai descubre una conspiración contra el rey (2:21–23).</p>\n<p>Amán, el agagita, es ascendido a primer ministro y, ofendido por la negativa de Mordecai a postrarse, consigue un decreto de exterminio de todos los judíos en el imperio (3:1–15). Mordecai insta a Ester a interceder. El jejún de tres días (4:15–16) precede a dos banquetes reales (caps. 5–7). En el segundo banquete, Ester denuncia a Amán, quien es colgado en la horca que había preparado para Mordecai (7:9–10). Mordecai es elevado y autoriza un segundo decreto que permite a los judíos defenderse (8:1–17). El día 13 de Adar (c. 473 a.C.) se convierte en Purim, una fiesta de celebración y lectura del Meguilat Ester (9:20–32). El libro no menciona el nombre de Dios explícitamente, pero describe la providencia oculta.</p>\n<p>Temas clave: Providencia, valentía, identidad judía, reversión de la suerte y celebración litúrgica.</p>",
+  "Job": "<h3>Biografía — Job</h3>\n<p>Autor tradicional: Anónimo (posiblemente Moisés o un sabio). Fecha estimada: incierta, tal vez c. 2000–1800 a.C. o época del exilio. Capítulos: 42. Género: Poesía dramática/sabiduría.</p>\n<p>Job explora el problema del sufrimiento del justo. Job, residente de Uz, es &quot;integro, recto, temeroso de Dios y apartado del mal&quot; (1:1). Dios permite que Satanás lo pruebe con la pérdida de sus hijos, riquezas y salud (1:6–2:10). Su esposa le insta a maldecir a Dios, pero Job resiste.</p>\n<p>Tres amigos —Elifaz, Bildad y Zofar— visitan y sostienen que su sufrimiento implica pecado oculto (caps. 3–31). Job defiende su inocencia y exige audiencia con Dios. Elifaz apela a la experiencia (4–5), Bildad a la tradición (8) y Zofar a la justicia divina (11). Job rechaza sus argumentos como simplistas y demanda un defensor (goel, 16:19; 19:25). El joven Eliú (caps. 32–37) interrumpe con una perspectiva de juicio disciplinario y la grandeza de Dios en la naturaleza.</p>\n<p>La respuesta divina desde el torbellino (38:1–42:6) no explica el sufrimiento, sino que revela la omnipotencia creadora: la fundación de la tierra, las estrellas, los animales (behemot, leviatán). Job se arrepiente &quot;en polvo y ceniza&quot; (42:6). Dios restaura el doble de sus bienes, le da siete hijos y tres hijas (Jemima, Cesia y Keren-hapuc), y Job muere &quot;viejo y lleno de días&quot; (42:17). El libro es poético en su cuerpo central (3:1–42:6) y prosaico en los marcos narrativos.</p>\n<p>Temas clave: Teodicea, justicia, humildad, sabiduría divina, fe y restauración.</p>",
+  "Salmos": "<h3>Biografía — Salmos</h3>\n<p>Autor tradicional: Múltiples: David (73), Asaf (12), hijos de Coré (11), Salomón (2), Moisés (1), Etan (1), Hemán (1). Fecha estimada: c. 1400–450 a.C. Capítulos: 150. Género: Poesía lírica/himno.</p>\n<p>El Salterio es la colección de himnos y oraciones de Israel. Se divide en cinco libros (1–41; 42–72; 73–89; 90–106; 107–150), imitando la estructura de la Torá. Los géneros incluyen lamentaciones individuales (3, 22, 51), lamentaciones comunitarias (44, 74), himnos de alabanza (8, 19, 104), himnos de acción de gracias (30, 34), himnos de la realeza (2, 45, 110), salmos de sabiduría (1, 37, 119) y peregrinación (120–134).</p>\n<p>Salmo 119, el más largo (176 versículos), es un acróstico de 22 estrofas según el alfabeto hebreo, celebrando la ley (torah). El Salmo 23, atribuido a David, es una confesión de confianza en el pastor divino. El Salmo 51, compuesto tras el pecado con Betsabé, es la oración de arrepentimiento más profunda de la Biblia. Los salmos mesiánicos (2, 22, 110) son citados extensamente en el Nuevo Testamento. El Salmo 137 recuerda el exilio en Babilonia con la imagen de los salterios colgados de los sauces. El Salmo 150 cierra con una invitación universal a la alabanza con todos los instrumentos.</p>\n<p>Temas clave: Alabanza, arrepentimiento, confianza, realeza, ley, justicia y esperanza escatológica.</p>",
+  "Proverbios": "<h3>Biografía — Proverbios</h3>\n<p>Autor tradicional: Salomón, Agur, el rey Lemuel, sabios anónimos. Fecha estimada: c. 950–700 a.C. Capítulos: 31. Género: Sabiduría/poesía didáctica.</p>\n<p>Proverbios es una antología de instrucciones prácticas para la vida recta. El prólogo (1:1–7) define el propósito: &quot;Para conocer sabiduría y disciplina&quot;. Los capítulos 1–9 son discursos poéticos que personifican la Sabiduría como una mujer que clama en las plazas y construye su casa (1:20–33; 8; 9:1–6). La Sabiduría preexistente asiste en la creación (8:22–31). La mujer extraña (adultera) representa la tentación destructiva (2:16–19; 5; 7).</p>\n<p>Los capítulos 10–22:16 son proverbios de Salomón, mayoritariamente antitéticos. Los capítulos 22:17–24:22 y 24:23–34 se basan en las instrucciones de Amenemope, un sabio egipcio. Los capítulos 25–29 son proverbios de Salomón transcritos por los hombres de Ezequías. El capítulo 30 contiene las oraciones de Agur (30:5–9) y las &quot;cuatro cosas&quot; pequeñas pero sabias (hormigas, conejos, langostas, lagartos). El capítulo 31 describe la &quot;mujer virtuosa&quot; (eshet chayil), un acróstico alfabético que elogia la industria, el comercio, la caridad, la sabiduría y el temor de Dios.</p>\n<p>Temas clave: Sabiduría, disciplina, justicia, relaciones, trabajo, honestidad y el temor de Jehová como principio del conocimiento.</p>",
+  "Eclesiastés": "<h3>Biografía — Eclesiastés</h3>\n<p>Autor tradicional: Salomón (&quot;hijo de David, rey en Jerusalén&quot;). Fecha estimada: c. 935 a.C. Capítulos: 12. Género: Sabiduría/filosofía.</p>\n<p>Eclesiastés (hebreo Kohelet, el Predicador) examina el significado de la vida bajo el sol. El lema &quot;Vanidad de vanidades, todo es vanidad&quot; (hevel havalim, 1:2) resuena a lo largo del libro. El autor prueba la sabiduría, el placer (vinos, jardines, esclavos, mujeres), la riqueza y el trabajo, y concluye que todo es &quot;correr tras el viento&quot; (1:14; 2:11, 17, 26; etc.).</p>\n<p>El tiempo (3:1–8) es soberano: hay tiempo de nacer y de morir, de matar y de sanar. La opresión (4:1), la vanidad de los votos (5:1–7), el amor al dinero (5:10) y la inevitabilidad de la muerte (6:6) se examinan. La exhortación a disfrutar los dones simples —comer, beber, trabajar, amar— aparece como una concesión divina (2:24; 3:12–13; 5:18; 9:7–9). La conclusione filosófica es que Dios todo lo hace hermoso en su tiempo, aunque el hombre no entienda el designio (3:11; 11:5). El epílogo (12:9–14) recuerda que el fin del mandamiento es temer a Dios y guardar sus mandamientos, pues &quot;Dios traerá toda obra a juicio&quot; (12:14).</p>\n<p>Temas clave: Vanidad, soberanía divina, goce simple, muerte, juicio y temor de Dios.</p>",
+  "Cantares": "<h3>Biografía — Cantares</h3>\n<p>Autor tradicional: Salomón. Fecha estimada: c. 965 a.C. Capítulos: 8. Género: Poesía lírica/erótica espiritual.</p>\n<p>Cantares (hebreo Shir ha-Shirim, el Cantar de los Cantares) es una colección de poemas de amor entre un hombre y una mujer, tradicionalmente interpretados como alegoría de la relación entre Dios e Israel, o entre Cristo y la iglesia. El texto no menciona a Dios explícitamente.</p>\n<p>La narrativa dramática alterna voces: el amado (rey/pastor), la amada (sulamita) y un coro de amigas. La amada se describe a sí misma como &quot;morena y hermosa&quot; (1:5). El amado canta la belleza de su amada con metáforas naturales: cabellos como rebaño de cabras, dientes como rebaño de ovejas recién trasquiladas, labios como lirios (4:1–5). La búsqueda de la amada por las calles de la ciudad (3:1–5; 5:2–8) expresa el deseo y la ansiedad. La unión en el jardín (4:12–5:1) y la invitación a disfrutar los frutos del amor son célebres. El capítulo 8 proclama la fuerza del amor: &quot;las muchas aguas no podrán apagar el amor&quot; (8:7). La hermandad entre los amados se expresa en la figura de los pechos como gemelos de gacela (7:3). El libro celebra la exclusividad, la belleza, el deseo mutuo y la invulnerabilidad del amor verdadero.</p>\n<p>Temas clave: Amor, deseo, exclusividad, belleza mutua y unión íntima.</p>",
+  "Isaías": "<h3>Biografía — Isaías</h3>\n<p>Autor tradicional: Isaías hijo de Amoz. Fecha estimada: c. 740–690 a.C. Capítulos: 66. Género: Profecía/poesía.</p>\n<p>Isaías es el &quot;príncipe de los profetas&quot;. Su ministerio se extiende bajo los reinados de Uzías, Jotam, Acaz y Ezequías (1:1). Los capítulos 1–39 contienen juicios y esperanzas. La visión del templo (6:1–8) lo comisiona con el mensaje de endurecimiento del corazón del pueblo. El emmanuelismo (7:14) promete un niño como signo de juicio y esperanza. Los oráculos contra las naciones (caps. 13–23) incluyen Babilonia, Asiria, Moab, Egipto y Tiro. El &quot;Apocalipsis de Isaías&quot; (caps. 24–27) profetiza el juicio universal y la resurrección (26:19). Los ayes (caps. 28–33) condenan a los líderes de Jerusalén. La invasión de Senaquerib (36–39) y la curación de Ezequías (38) cierran esta sección.</p>\n<p>Los capítulos 40–55 (Deutero-Isaías) son consolatorios. &quot;Consolad, consolad a mi pueblo&quot; (40:1) inicia el regreso del exilio. El Siervo de Yahvéh aparece en cuatro cánticos (42:1–4; 49:1–6; 50:4–9; 52:13–53:12). Este Siervo sufre vicariamente: &quot;Ciertamente llevó él nuestras enfermedades... herido fue por nuestras rebeliones&quot; (53:4–5). Ciro es llamado &quot;mi ungido&quot; (mashíaj, 45:1) para liberar a Judá.</p>\n<p>Los capítulos 56–66 (Trito-Isaías) tratan la comunidad postexílica, la universalidad del templo (56:6–8) y la nueva creación (65:17–25; 66:22–24). El libro cierra con la visión de todos los pueblos adorando en Jerusalén y el fuego eterno para los rebeldes.</p>\n<p>Temas clave: Juicio, redención, siervo sufriente, Emmanuel, Ciro, nueva creación y Sion.</p>",
+  "Jeremías": "<h3>Biografía — Jeremías</h3>\n<p>Autor tradicional: Jeremías hijo de Hilcías. Fecha estimada: c. 627–580 a.C. Capítulos: 52. Género: Profecía/narrativa/poesía.</p>\n<p>Jeremías profetiza desde el año 13 de Josías hasta después del exilio. Su llamado juvenil (1:4–10) incluye la visión de la vara de almendro (1:11–12) y la caldera que hierve del norte (1:13–14). Es un profeta de juicio y lágrimas, conocido como el &quot;profeta llorón&quot;. Los primeros capítulos (2–6) acusan a Israel de adulterio espiritual e idolatría. El templo sermón (7:1–8:3) niega la seguridad mágica del santuario sin arrepentimiento.</p>\n<p>La confesión de Jeremías (11:18–12:6; 15:10–21; 18:18–23; 20:7–18) revela su angustia personal, su deseo de no haber nacido y su fidelidad a pesar del rechazo. La parábola del alfarero (18:1–11) y la rotura de la botella de Topet (19) son signos actuados. La persecución del profeta incluye su encarcelamiento en el calabozo de Masea (37:11–21), el foso de Micaías (38:6–13) y la cárcel del patio de la guardia (32:2; 33:1).</p>\n<p>Jeremías profetiza los 70 años de exilio (25:11–12; 29:10). La carta a los exiliados (29) insta a construir, casarse y orar por Babilonia. El nuevo pacto (31:31–34) promete ley escrita en el corazón, conocimiento directo de Dios y perdón de pecados. La caída de Jerusalén (39; 52) y el asesinato de Gedalías (41) se narran. Los capítulos 46–51 contienen oráculos contra las naciones. Baruc, el escriba, es mencionado como colaborador (36:4). Jeremías muere en Egipto, según tradición, o en Masgaba (43:1–7).</p>\n<p>Temas clave: Juicio, arrepentimiento, nuevo pacto, lamento personal, destrucción y esperanza.</p>",
+  "Lamentaciones": "<h3>Biografía — Lamentaciones</h3>\n<p>Autor tradicional: Jeremías. Fecha estimada: c. 586 a.C. Capítulos: 5. Género: Poesía lírica/lamento.</p>\n<p>Lamentaciones es una elegía sobre la destrucción de Jerusalén. Los capítulos 1, 2, 4 y 5 son acrósticos del alfabeto hebreo (22 estrofas en 1–2; 22 versículos en 4; 22 líneas en 5). El capítulo 3 es un triple acróstico (66 versículos). El lamento personifica a Sion como una viuda desolada, despojada de sus hijos, violada por enemigos y abandonada por amantes (1:1–22).</p>\n<p>La descripción del juicio es gráfica: niños que piden pan y no hay quien les parta (4:4), mujeres que comen su propia descendencia (2:20; 4:10), príncipes colgados por las manos, ancianos ultrajados (5:12). El capítulo 3, pese al desastre, afirma la esperanza en la misericordia de Yahvéh: &quot;Nuevas son cada mañana; grande es tu fidelidad&quot; (3:22–23). El lamento final reconoce la culpa y pide restauración (5:1–22). El libro se lee tradicionalmente durante el Tishá BeAv.</p>\n<p>Temas clave: Duelo, culpa, desolación, esperanza en la fidelidad divina y restauración.</p>",
+  "Ezequiel": "<h3>Biografía — Ezequiel</h3>\n<p>Autor tradicional: Ezequiel, sacerdote. Fecha estimada: c. 593–571 a.C. Capítulos: 48. Género: Profecía/narrativa/visión.</p>\n<p>Ezequiel es sacerdote y profeta entre los exiliados en Babilonia. Su llamado (1:1–3:15) incluye la visión de los querubines con cuatro rostros (hombre, león, buey, águila), ruedas que se mueven en todas direcciones y la gloria (shejináh) sobre el trono móvil. Comer el rollo de lamentaciones, endechas y aflicciones (2:8–3:3) simboliza la asimilación del juicio. Ezequiel queda mudo (3:26) y atado (4:1–8) como signo del sitio de Jerusalén.</p>\n<p>Los signos actuados (caps. 4–5) incluyen el tiesto, el cabello rasurado y repartido, y la espada contra Jerusalén. La idolatría en el templo (8:1–18) y la retirada de la gloria (10:1–22; 11:22–25) profetizan la destrucción. Los capítulos 12–24 profetizan el exilio, la caída del reino y la responsabilidad individual (18:1–32). El capítulo 18 enseña que el alma que peca, esa morirá; no hay responsabilidad colectiva automática.</p>\n<p>Los capítulos 25–32 son oráculos contra las naciones: Amón, Moab, Edom, Filistea, Tiro, Sidón y Egipto. La alegoría de la vid inútil (15) y la parábola de las dos águilas (17) ilustran la infidelidad de Judá. Los capítulos 33–48 son de restauración. El pastor bueno (34), Edom destruido (35), la resurrección de los huesos secos (37:1–14) y los dos palos de Judá e Israel reunidos (37:15–28) prometen la restauración nacional. Gog y Magog (38–39) representan la última invasión antes de la paz. Los capítulos 40–48 describen el templo futuro, sus dimensiones (500 cañas de remate, 42:16), la restauración de la tierra en doce porciones para las tribus, y el río que brota del templo para sanar el Mar Muerto (47:1–12). Yahvéh habita para siempre en la nueva Jerusalén (48:35).</p>\n<p>Temas clave: Gloria, juicio, responsabilidad individual, restauración, templo futuro y unidad nacional.</p>",
+  "Daniel": "<h3>Biografía — Daniel</h3>\n<p>Autor tradicional: Daniel. Fecha estimada: c. 605–536 a.C. Capítulos: 12. Género: Narrativa/apocalíptica.</p>\n<p>Daniel narra la experiencia de los judíos exiliados en Babilonia. Daniel y sus tres amigos (Ananías, Misael, Azarías —Sadrac, Mesac y Abed-nego) son seleccionados para el servicio real de Nabucodonosor (caps. 1–2). Daniel interpreta el sueño de la estatua compuesta por oro (Babilonia), plata (Media-Persia), bronce (Grecia), hierro (Roma) y pies de hierro y barro (2:31–45). Los tres hebreos son arrojados al horno de fuego (3:19–30) y preservados por un ángel.</p>\n<p>Daniel interpreta el sueño del árbol de Nabucodonosor (cap. 4) y la inscripción del muro en el festín de Belsasar (cap. 5): &quot;Mene, mene, tequel, u-farsin&quot; —contado, pesado, dividido. Daniel sobrevive a los leones en el reinado de Darío el medo (cap. 6). Las visiones apocalípticas (caps. 7–12) incluyen las cuatro bestias (7:1–28), el carnero y el macho cabrío (8), las 70 semanas de años (9:24–27) y la visión del tiempo del fin (10–12). El &quot;hijo de hombre&quot; que viene con las nubes recibe dominio eterno (7:13–14). Las 70 semanas predicen la destrucción de Jerusalén y la abominación desoladora (9:27; 12:11). La resurrección a vida o a ignominia eterna se anuncia en 12:2.</p>\n<p>Temas clave: Soberanía divina sobre imperios, fidelidad bajo prueba, profecía apocalíptica, resurrección y juicio final.</p>",
+  "Oseas": "<h3>Biografía — Oseas</h3>\n<p>Autor tradicional: Oseas hijo de Beeri. Fecha estimada: c. 755–715 a.C. Capítulos: 14. Género: Profecía/poesía.</p>\n<p>Oseas profetiza en el reino del Norte (Israel) durante los reinados de Uzías, Jotam, Acaz y Ezequías de Judá, y de Jeroboam II de Israel (1:1). Su vida es un signo actuado: Dios le ordena casarse con Gomer, una mujer de prostitución, para simbolizar la infidelidad de Israel (1:2–3). Los tres hijos —Jezreel, Lo-ruhama (&quot;no compadecida&quot;) y Lo-ammi (&quot;no mi pueblo&quot;)— representan juicio, rechazo y ruptura.</p>\n<p>A pesar del adulterio de Israel, Dios persigue a su esposa con amor inquebrantable (hesed). El capítulo 2 describe el juicio (quitar la lana y el lino, destruir las viñas, detener las fiestas) y la restauración (pacto de bestias, seguridad, esposo para siempre). El capítulo 3 narra la compra de Gomer por quince piezas de plata y un homer de cebada, simbolizando la redención. Los capítulos 4–13 acusan a Israel de idolatría, corrupción sacerdotal, asesinato, juramentos falsos y desobediencia. El capítulo 6:6 exige &quot;misericordia y no sacrificio, y conocimiento de Dios más que holocaustos&quot;. El capítulo 11 describe a Dios como padre que amó a Israel desde Egipto. El libro cierra con un llamado al arrepentimiento (14:1–3) y la promesa de sanación, amor, resurrección y belleza como el olivo (14:4–8).</p>\n<p>Temas clave: Adulterio espiritual, hesed, juicio, redención, conocimiento de Dios y paternidad divina.</p>",
+  "Joel": "<h3>Biografía — Joel</h3>\n<p>Autor tradicional: Joel hijo de Petuel. Fecha estimada: incierta, tal vez c. 835 a.C. o postexílico. Capítulos: 3. Género: Profecía/poesía.</p>\n<p>Joel describe una plaga de langostas como juicio y presagio del día de Yahvéh. La invasión devora todo: cosechas, viñas, olivos, granos y ofrendas. Los sacerdotes deben lamentarse (1:13–14). El capítulo 2 presenta el ejército de langostas como un fenómeno militar: marchan en orden, trepan muros, entran por ventanas, y la tierra se estremece ante ellas (2:1–11). La invitación al arrepentimiento (2:12–17) promite que Dios será celoso por su tierra y tendrá compasión.</p>\n<p>La restauración (2:18–27) incluye la devolución de los años comidos por las langostas, lluvia temprana y tardía, abundancia de trigo y vino, y la expulsión del ejército del norte. Dios derramará su Espíritu sobre toda carne: hijos e hijas profetizarán, los ancios soñarán, los jóvenes verán visiones (2:28–32). Este texto es citado por Pedro en Hechos 2. Los capítulos 3 profetizan el juicio de las naciones en el valle de Josafat, la vendimia de la ira y la morada de Dios en Sion.</p>\n<p>Temas clave: Juicio, arrepentimiento, día de Yahvéh, derramamiento del Espíritu y restauración universal.</p>",
+  "Amós": "<h3>Biografía — Amós</h3>\n<p>Autor tradicional: Amós, pastor de Tecoa. Fecha estimada: c. 760–750 a.C. Capítulos: 9. Género: Profecía/poesía.</p>\n<p>Amós es el profeta rural del reino del Norte durante Jeroboam II. Los primeros capítulos (1–2) pronuncian juicios contra las naciones vecinas (Damasco, Gaza, Tiro, Edom, Amón, Moab) y culminan con Judá e Israel. La acusación a Israel incluye la venta de los justos por dinero, la pobreza por un par de sandalias, la opresión de la viuda y el incesto con la hija de su padre (2:6–8).</p>\n<p>Los capítulos 3–6 desarrollan el juicio: &quot;¿Andarán dos juntos, si no estuvieren de acuerdo?&quot; (3:3). Las vacas de Basán (4:1) representan a las mujeres ricas que oprimen a los pobres. Los cinco castigos (4:6–11) —hambre, sequía, langostas, peste y espada— no lograron arrepentimiento. La invitación al culto es rechazada: &quot;Odio, aborrezco vuestras fiestas... no escucharé el son de vuestras violas&quot; (5:21–23). La justicia como agua viva es el imperativo (5:24). La visión de las cestas de frutos maduros (8:1–2) y el plomero (7:7–9) anuncian el fin del reino. El altar de Betel será destruido (9:1). La restauración final (9:11–15) promete la reedificación del tabernáculo de David, la posesión de la tierra, la abundancia y la plantación de viñas y huertos.</p>\n<p>Temas clave: Justicia social, oposición al culto vacío, juicio, soberanía de Yahvéh sobre naciones y restauración davídica.</p>",
+  "Abdías": "<h3>Biografía — Abdías</h3>\n<p>Autor tradicional: Abdías. Fecha estimada: c. 586 a.C. o más temprano. Capítulos: 1. Género: Profecía/poesía.</p>\n<p>Abdías es el libro más corto del Antiguo Testamento. Su único capítulo profetiza la destrucción de Edom por su participación en la caída de Jerusalén. Cuando Babilonia invadió, los edomitas se aliaron con el invasor, saquearon a los fugitivos y entregaron a los sobrevivientes. El juicio es implacable: Edom será despojada, sus sabios destruidos, sus guerreros caídos. El orgullo de su corazón la ha engañado, habitando en las hendiduras de las peñas (vers. 3). El día de Yahvéh es cercano para todas las naciones; como hicieron, les será hecho. El versículo 15 anuncia que &quot;cercano está el día de Jehová sobre todas las naciones&quot;. Israel será restaurada y poseerá las montañas de Edom. El salvador subirá al monte Sion para juzgar el monte de Esaú (vers. 21). La tensión hermano-enemigo entre Jacob y Esaú es el fondo teológico.</p>\n<p>Temas clave: Juicio contra la traición, soberanía de Yahvéh, día del Señor y restauración de Israel.</p>",
+  "Jonás": "<h3>Biografía — Jonás</h3>\n<p>Autor tradicional: Jonás, hijo de Amitai. Fecha estimada: c. 780–760 a.C. Capítulos: 4. Género: Narrativa profética.</p>\n<p>Jonás es un relato de misión y compasión universal. Dios envía a Jonás a Ninive, capital de Asiria, para predicar contra su maldad. Jonás huye a Tarsis, embarcándose en Jope. La tormenta (cap. 1) amenaza con hundir la nave; los marineros, tras sortear, arrojan a Jonás al mar. Una &quot;gran pez&quot; (o ballena) lo traga durante tres días y tres noches (1:17). La oración de Jonás desde el vientre (cap. 2) es una elegía de gratitud por la salvación.</p>\n<p>Dios ordena nuevamente a Jonás (cap. 3). Predica un mensaje de una sola frase: &quot;Aún cuarenta días, y Ninive será destruida&quot;. Los ninivitas, desde el rey hasta los animales, se visten de cilicio, ayunan y se arrepienten. Dios &quot;se arrepintió del mal que había dicho que les haría&quot; (3:10). Jonás, indignado por la misericordia divina, se sienta al oriente de la ciudad esperando su caída (cap. 4). Dios le crece una calabacera (kikayon) para darle sombra, y luego envía un gusano para que se seque. La lección final es que Dios tiene compasión de los 120.000 ninivitas que no distinguen entre su derecha y su izquierda, y de las bestias.</p>\n<p>Temas clave: Misericordia universal, arrepentimiento, compasión divina y etnocentrismo humano.</p>",
+  "Miqueas": "<h3>Biografía — Miqueas</h3>\n<p>Autor tradicional: Miqueas de Moréset. Fecha estimada: c. 735–700 a.C. Capítulos: 7. Género: Profecía/poesía.</p>\n<p>Miqueas profetiza en los días de Jotam, Acaz y Ezequías de Judá (1:1). Los capítulos 1–3 pronuncian juicio contra Samaria y Jerusalén por la idolatría, la corrupción de los jefes, la venalidad de los sacerdotes y la codicia de los profetas. &quot;Los principales de la casa de Jacob aborrecen el juicio y tuercen todo lo recto&quot; (3:9). Sion será arada como campo y Jerusalén se convertirá en montón de ruinas (3:12). Este versículo es citado por los judíos en Jeremías 26:18.</p>\n<p>Los capítulos 4–5 profetizan la restauración: &quot;En los postreros días acontecerá que el monte de la casa de Jehová será establecido por cabeza de los montes&quot; (4:1). La paz universal bate espadas en rejas de arado. El Mesías nacerá en Belén Efrata (5:2), regirá con la fuerza de Yahvéh y será grande hasta los confines de la tierra. Los capítulos 6–7 presentan la demanda judicial de Dios contra Israel (6:1–8). &quot;¿Qué es lo que Jehová requiere de ti... sino que hagas justicia, y ames la misericordia, y andes humildemente con tu Dios?&quot; (6:8). La confesión final (7:1–20) lamenta la desolación, pero celebra que Dios perdonará, arrojará los pecados en el fondo del mar y cumplirá las promesas a los patriarcas.</p>\n<p>Temas clave: Justicia, misericordia, humildad, Mesías de Belén, restauración y perdón de los pecados.</p>",
+  "Nahúm": "<h3>Biografía — Nahúm</h3>\n<p>Autor tradicional: Nahúm de Elcos. Fecha estimada: c. 663–612 a.C. Capítulos: 3. Género: Profecía/poesía.</p>\n<p>Nahúm es una elegía sobre la caída de Ninive. El capítulo 1 es un poema teofánico que describe a Yahvéh como vengador, celoso y lento para la ira, pero poderoso en tormenta y terremoto. &quot;Jehová es bueno, refugio en el día de la angustia&quot; (1:7). El capítulo 2 describe la batalla final: escudos rojos, lanzas flameantes, carros que se precipitan, palacios deshechos y soldados como mujeres. El capítulo 3 acusa a Ninive de bruja, prostitución y tráfico de naciones. &quot;Bienes al vender naciones, y familias al venderlas&quot; (3:4). Se comparan con Tebas, que también fue destruida. Los defensores huyen como langostas. La sentencia es irrevocable: &quot;No habrá más sino que te aterrorizaré... pues ¿por qué te acontecerá otra vez?&quot; (2:11). La caída histórica ocurrió en 612 a.C. ante los medos y babilonios. Nahúm es la respuesta a la pregunta de cómo Dios trata con los imperios opresores que se arrepienten pero luego recaen.</p>\n<p>Temas clave: Juicio contra la opresión, soberanía de Yahvéh sobre imperios, justicia retributiva y consuelo para los oprimidos.</p>",
+  "Habacuc": "<h3>Biografía — Habacuc</h3>\n<p>Autor tradicional: Habacuc. Fecha estimada: c. 605 a.C. Capítulos: 3. Género: Profecía/poesía/sabiduría.</p>\n<p>Habacuc es un diálogo entre el profeta y Dios sobre la justicia. El capítulo 1 presenta la queja: la violencia en Judá, la ley debilitada y la injusticia prevalece. Dios responde que levantará a los caldeos (babilonios), un pueblo feroz y terrible que avanza para conquistar (1:5–11). Habacuc reitera su pregunta: ¿por qué un Dios santo usa a una nación más impía que Judá para castigar? (1:12–2:1).</p>\n<p>Dios responde con la gran cita de 2:4: &quot;He aquí que el alma de aquel que se enorgullece no es recta en él; mas el justo por su fe vivirá&quot; (emuná). Las cinco &quot;ayes&quot; (2:6–20) condenan la codicia, la injusticia, la violencia, la idolatría y el orgullo. El capítulo 3 es una oración poética de alabanza que recuerda la teofanía de Dios en el Sinaí, la victoria sobre el mar y los ríos. Habacuc concluye con una confesión de confianza: aunque la higuera no florezca, no haya fruto en las vides, falte el rebaño y no haya ganado en los corrales, &quot;yo me alegraré en Jehová... el Señor Jehová es mi fortaleza&quot; (3:17–19). Este texto es fundamental para la teología paulina de la justificación por fe.</p>\n<p>Temas clave: Justicia, teodicea, fe, soberanía divina, opresión y confianza incondicional.</p>",
+  "Sofonías": "<h3>Biografía — Sofonías</h3>\n<p>Autor tradicional: Sofonías, bisnieto del rey Ezequías. Fecha estimada: c. 640–621 a.C. Capítulos: 3. Género: Profecía/poesía.</p>\n<p>Sofonías profetiza en los días de Josías. El día de Yahvéh es inminente y universal. Dios destruirá todo del rostro de la tierra: hombres y bestias, aves y peces (1:2–3). El juicio se extiende a Judá, Jerusalén, los Baales, los sacerdotes paganos, los que se postran sobre los terrados a los astros, los que se apartan de Jehová y los que no buscan ni inquieren por él (1:4–6). El día será de ira, angustia, devastación, tiniebla y desolación (1:14–15). Se buscará en las puertas de los peces y en la segunda ciudad, pero el juicio alcanzará a los comerciantes, a los que se visten con ropas extranjeras y a los que saltan la puerta.</p>\n<p>Las naciones son condenadas (cap. 2): Filistea, Moab, Amón, Etiopía y Asiria. El capítulo 3 se dirige a Jerusalén: los príncipes son leones rugientes, los jueces lobos nocturnos, los profetas sacrílegos, los sacerdotes profanan el santuario. La destrucción de las naciones paganas es seguida por la restauración: &quot;En aquel tiempo yo te traeré, y en aquel tiempo os reuniré... y os pondré por nombre y por alabanza entre todos los pueblos de la tierra&quot; (3:20). El remanente pobre y humillado será protegido.</p>\n<p>Temas clave: Día de Yahvéh, juicio universal, idolatría, remanente humilde y restauración mundial.</p>",
+  "Ageo": "<h3>Biografía — Ageo</h3>\n<p>Autor tradicional: Ageo. Fecha estimada: c. 520 a.C. Capítulos: 2. Género: Profecía/narrativa.</p>\n<p>Ageo profetiza en el segundo año de Darío I (520 a.C.), instando a los repatriados a reanudar la construcción del templo. El pueblo había dicho &quot;No es tiempo de venir, el tiempo de la casa de Jehová&quot; (1:2), mientras construían sus propias casas encieladas. La sequía, la escasez y la pobreza son el juicio por la negligencia del santuario (1:5–11). Ageo exhorta a Zorobabel (gobernador), Josué (sumo sacerdote) y al pueblo a considerar sus caminos (1:5; 1:7; 2:15; 2:18).</p>\n<p>El capítulo 2 compara el nuevo templo con el primero: muchos ancianos lloran porque la gloria de este es menor que la del de Salomón. Dios promete que la gloria postrera será mayor que la primera, y que en este lugar dará paz (2:9). La promesa de las cosas pequeñas (2:10–19) asegura que la bendición comenzará desde el día de la colocación de la piedra. Las cuatro preguntas sobre la pureza ritual (2:11–14) enseñan que la santidad no es contagiosa, pero la impureza sí. La última profecía (2:20–23) promete que Dios sacudirá cielos, tierra y reinos, y traerá a Zorobabel como su anillo sellado, elegido.</p>\n<p>Temas clave: Prioridades, gloria del templo, bendición, pureza y soberanía sobre las naciones.</p>",
+  "Zacarías": "<h3>Biografía — Zacarías</h3>\n<p>Autor tradicional: Zacarías hijo de Berequías, nieto de Idó. Fecha estimada: c. 520–518 a.C. Capítulos: 14. Género: Profecía/apocalíptica.</p>\n<p>Zacarías es contemporáneo de Ageo y profetiza en el segundo año de Darío. Los capítulos 1–6 contienen ocho visiones nocturnas: el hombre entre los mirtos (1:7–17), los cuatro cuernos y los cuatro artesanos (1:18–21), el hombre con la cuerda de medir (2:1–13), la investidura de Josué (3:1–10), el candelabro de oro y los dos olivos (4:1–14), el rollo que vuela (5:1–4), la mujer en la efa (5:5–11) y los cuatro carros (6:1–8). La corona de Josué (6:9–15) simboliza al siervo Mesías.</p>\n<p>Los capítulos 7–8 responden a una pregunta sobre el ayuno. Dios exige justicia y misericordia, no ayunos mecánicos. La restauración de Jerusalén incluye ancianos y niños en las plazas, la plantación de viñas y la paz entre las naciones. Los capítulos 9–11 son una profecía de la llegada del rey humilde, montado en un asno (9:9), y del pastor bueno rechazado (11:4–17). Los capítulos 12–14 describen el día de Yahvéh: el sitio de Jerusalén, la efusión de un espíritu de gracia y súplicas, la visión de aquel a quien traspasaron (12:10), la fuente abierta para el pecado y la impureza (13:1), el corte del pastor, la dispersión de las ovejas y el juicio de las naciones. El capítulo 14 presenta el día en que los pies del Señor se posarán en el monte de los Olivos, la lucha contra las naciones, la plaga de las gentes que no suban a adorar al rey, y la santidad total de Jerusalén.</p>\n<p>Temas clave: Visiones, Mesías humilde, restauración, juicio de las naciones, templo futuro y santificación.</p>",
+  "Malaquías": "<h3>Biografía — Malaquías</h3>\n<p>Autor tradicional: Malaquías (nombre que significa &quot;mi mensajero&quot;). Fecha estimada: c. 460–430 a.C. Capítulos: 4. Género: Profecía/poesía/dialogo.</p>\n<p>Malaquías es el último profeta del Antiguo Testamento. El libro está estructurado como un debate (disputa) entre Dios y Israel. La primera disputa (1:2–5) defiende el amor de Dios por Jacob sobre Esaú. La segunda (1:6–2:9) acusa a los sacerdotes de ofrecer sacrificios ciegos, cojos y enfermos, profanando el altar. La tercera (2:10–16) condena el divorcio y los matrimonios con paganas, pidiendo que nadie sea infiel a la esposa de su juventud, porque Dios odia el divorcio (2:16). La cuarta (2:17–3:5) responde a la pregunta de dónde está el Dios de justicia. El mensajero de la alianza vendrá a refinar y purificar; los adúlteros, hechiceros, perjuros y opresores serán juzgados.</p>\n<p>La quinta disputa (3:6–12) trata del robo a Dios en los diezmos y ofrendas. Si se traen todo el diezmo a los almacenes, Dios abrirá las ventanas de los cielos y bendecirá abundantemente. La sexta (3:13–4:3) responde a la queja de que servir a Dios es vano. El libro de memoria será abierto, y los que temen a Dios serán para él joya especial. La conclusión (4:4–6) exhorta a guardar la ley de Moisés y anuncia la venida de Elías antes del día grande y terrible, para reconciliar padres e hijos y evitar la maldición sobre la tierra.</p>\n<p>Temas clave: Amor divino, pureza sacerdotal, fidelidad marital, diezmo, justicia y preparación escatológica.</p>\n<p>biografias_NT</p>\n<p>Biografías de los Libros de la Biblia — Nuevo Testamento</p>",
+  "Mateo": "<h3>Biografía — Mateo</h3>\n<p>Autor tradicional: Mateo (Leví), recaudador de impuestos. Fecha estimada: c. 50–70 d.C. Capítulos: 28. Género: Evangelio/narrativa.</p>\n<p>Mateo es el primer evangelio del canon y el más judío en tono y estructura. Comienza con una genealogía tripartita (1:1–17) que vincula a Jesús con Abraham y David, organizada en tres ciclos de 14 generaciones, legitimando su realeza mesiánica. La narrativa del nacimiento incluye la concepción virginal de María por el Espíritu Santo (1:18–25), la visita de los magos (2:1–12), la matanza de los inocentes por Herodes el Grande (2:16–18) y el exilio en Egipto (2:13–15), cumpliendo la cita de Oseas 11:1.</p>\n<p>El ministerio de Jesús se inicia con el bautismo de Juan (3:1–17) y la tentación en el desierto, donde Jesús resiste tres pruebas basándose en Deuteronomio (4:1–11). El Sermón del Monte (caps. 5–7) es la catequesis central: las Bienaventuranzas (5:3–12), el cumplimiento de la ley (5:17–20), las antítesis (ira, lujuria, divorcio, juramentos, venganza, amor al enemigo), la oración del Padrenuestro (6:9–13), el ayuno, las riquezas, el juicio y la casa edificada sobre la roca. Mateo organiza el ministerio en cinco discursos mayores, imitando la Torá de Moisés: Sermón del Monte (5–7), instrucción misionera (10), parábolas del reino (13), comunidad eclesial (18) y discurso escatológico (24–25).</p>\n<p>Los milagros de Jesús incluyen la curación de un leproso (8:1–4), el paralítico (9:1–8), la resurrección de la hija de Jairo (9:18–26), la tempestad calmada (8:23–27), los endemoniados gadarenos (8:28–34) y la multiplicación de los panes (14:13–21; 15:32–39). La oposición farisea se intensifica con el desafío sobre el sábado (12:1–14), la acusación de pacto con Belcebú (12:22–37) y los ayes contra los escribas y fariseos (23:1–39). Las parábolas de Mateo son didácticas: el sembrador (13:1–9), la cizaña, el grano de mostaza, la levadura, el tesoro escondido, la perla preciosa, la red, el hijo pródigo (no en Mateo, sino en Lucas), el mayordomo infiel, las vírgenes prudentes y los talentos (25:14–30). La transfiguración (17:1–8) confirma la divinidad de Jesús ante Pedro, Jacobo y Juan.</p>\n<p>La entrada triunfal en Jerusalén (21:1–11) inaugura la pasión. Jesús expulsa a los mercaderes del templo (21:12–17), debate autoridad con los fariseos y saduceos (21:23–22:46), y pronuncia el juicio escatológico sobre Jerusalén (23:37–24:2). La última cena (26:17–35) instituye la eucaristía: &quot;Este es mi cuerpo... esta es mi sangre del pacto&quot; (26:26–28). La agonía en Getsemaní (26:36–46), el arresto, el juicio ante el Sanedrín, la negación de Pedro, la entrega a Pilato, la flagelación, la crucifixión en el Gólgota (27:32–56), la muerte con oscuridad sobre la tierra, el velo rasgado, las resurrecciones de los santos (27:51–53) y la sepultura en el sepulcro de José de Arimatea (27:57–66) se narran con sobriedad. La resurrección (28:1–10), la guardia sobornada (28:11–15) y la Gran Comisión en Galilea (28:16–20) cierran el evangelio: &quot;Haced discípulos a todas las naciones, bautizándolos... enseñándoles a guardar todo lo que os he mandado&quot; (28:19–20).</p>\n<p>Temas clave: Reino de los cielos, cumplimiento de las Escrituras, Mesías davidico, ley y gracia, discipulado, juicio y resurrección.</p>",
+  "Marcos": "<h3>Biografía — Marcos</h3>\n<p>Autor tradicional: Juan Marcos, compañero de Pedro y Pablo. Fecha estimada: c. 55–65 d.C. Capítulos: 16. Género: Evangelio/narrativa.</p>\n<p>Marcos es el evangelio más breve y probablemente el más antiguo. Su estilo es vívido, rápido y enfocado en la acción. No incluye genealogía ni nacimiento; comienza con el ministerio de Juan el Bautista (1:1–8) y el bautismo de Jesús (1:9–11), seguido de la tentación y el inmediato anuncio del reino: &quot;El tiempo se ha cumplido, y el reino de Dios se ha acercado; arrepentíos, y creed en el evangelio&quot; (1:15). Jesús llama a los primeros discípulos (1:16–20), expulsa un demonio en la sinagoga de Cafarnaúm (1:21–28) y comienza una ronda de curaciones: la suegra de Pedro, leprosos, paralíticos, el endemoniado de Gerasa, la hemorroísa, la hija de Jairo, el ciego de Betsaida.</p>\n<p>Marcos enfatiza el messianic secret (secreto mesiánico): Jesús ordena a los demonios y a los sanados que no revelen su identidad (1:25, 34, 44; 3:12; 5:43; 8:30; 9:9). La mitad del libro se dedica a la última semana en Jerusalén. Los discípulos son retratados con frecuencia como incomprensivos: no entienden las parábolas (4:13), la multiplicación de los panes (6:52), la predicción de la pasión (8:32; 9:32; 10:35–45). La transfiguración (9:2–13) confirma la filiación divina. La entrada en Jerusalén (11:1–11), la limpieza del templo (11:15–19), los debates con los líderes judíos (12:1–44) y el discurso escatológico (13:1–37) preparan la pasión. La última cena (14:12–26), Getsemaní (14:32–42), el arresto (14:43–52), el juicio ante Caifás (14:53–65), la negación de Pedro (14:66–72), la entrega a Pilato (15:1–15), la flagelación, la coronación de espinas, la crucifixión (15:16–41), la muerte a las tres de la tarde con el grito de abandono (&quot;Dios mío, Dios mío, ¿por qué me has desamparado?&quot;, 15:34), la confesión del centurión (15:39), la sepultura de José de Arimatea (15:42–47) y la resurrección narrada brevemente (16:1–8). Los manuscritos incluyen finales alternativos (16:9–20), pero el texto original probablemente termina con el temor de las mujeres.</p>\n<p>Temas clave: Servicio, sufrimiento, secreto mesiánico, discipulado imperfecto, cruz y resurrección.</p>",
+  "Lucas": "<h3>Biografía — Lucas</h3>\n<p>Autor tradicional: Lucas, médico y compañero de Pablo. Fecha estimada: c. 60–80 d.C. Capítulos: 24. Género: Evangelio/narrativa.</p>\n<p>Lucas es el evangelio más largo y universal, dirigido a &quot;Teófilo&quot; (1:3). Su prólogo afirma que la narración es el resultado de una investigación cuidadosa. Lucas incluye material único: los nacimientos de Juan el Bautista y Jesús, los cánticos de María (Magnificat, 1:46–55), Zacarías (Benedictus, 1:68–79) y Simeón (Nunc dimittis, 2:29–32). La genealogía (3:23–38) traza a Jesús hasta Adán, enfatizando la universalidad.</p>\n<p>El ministerio de Jesús incluye una fuerte atención a los marginados: la viuda de Nain (7:11–17), la mujer pecadora (7:36–50), las mujeres discípulas (8:1–3), la samaritana (10:25–37), María y Marta (10:38–42), el hijo pródigo (15:11–32), Zaqueo (19:1–10) y el buen ladrón (23:39–43). Las parábolas exclusivas de Lucas son el buen samaritano, el amigo importuno, el mayordomo infiel, el rico y Lázaro, y el juez injusto. El Sermón del Llano (6:17–49) paralelo al Sermón del Monte de Mateo incluye las Bienaventuranzas y los ayes.</p>\n<p>Lucas narra la transfiguración (9:28–36), la última entrada en Jerusalén (19:28–44), la limpieza del templo (19:45–48), los debates con los saduceos, fariseos y escribas (20:1–21:4), y el discurso escatológico (21:5–38). La última cena (22:7–23) incluye la institución de la eucaristía. Getsemaní (22:39–46), la curación de la oreja de Malco (22:50–51), el juicio ante Caifás y Pilato (22:54–23:25), la crucifixión en el Gólgota (23:26–49), el velo rasgado, la confesión del centurión (23:47), la sepultura de José de Arimatea (23:50–56) y la resurrección (24:1–12) se narran con detalle. La aparición en el camino a Emaús (24:13–35) y la ascensión desde el monte de los Olivos (24:50–53) cierran el evangelio. Lucas escribió también Hechos, formando una obra bipartita.</p>\n<p>Temas clave: Salvación universal, Espíritu Santo, mujeres, pobres, perdón, historia de la salvación y ascensión.</p>",
+  "Juan": "<h3>Biografía — Juan</h3>\n<p>Autor tradicional: Juan, el discípulo amado. Fecha estimada: c. 80–95 d.C. Capítulos: 21. Género: Evangelio/teológico.</p>\n<p>Juan es el evangelio más teológico y diferente en estructura de los sinópticos. No contiene parábolas (sino &quot;señales&quot; y discursos largos), ni exorcismos, ni institución de la eucaristía en la última cena. El prólogo (1:1–18) es el texto cristológico más elevado del Nuevo Testamento: &quot;En el principio era el Verbo, y el Verbo era con Dios, y el Verbo era Dios... Y el Verbo se hizo carne, y habitó entre nosotros&quot; (1:1, 14). Identifica a Jesús como el Logos (logos), la luz, la vida y la única exposición del Padre.</p>\n<p>El ministerio de Jesús se organiza alrededor de siete señales: la conversión del agua en vino en Caná (2:1–12), la curación del hijo del oficial en Cafarnaúm (4:46–54), la curación del paralítico en Betesda (5:1–18), la multiplicación de los panes (6:1–14), la caminata sobre el mar (6:15–21), la curación del ciego de nacimiento (9:1–41) y la resurrección de Lázaro (11:1–45). Cada señal es seguida de un discurso teológico que interpreta su significado: el templo del cuerpo (2:19–22), el nacimiento del espíritu (3:1–21), la fuente de agua viva (4:1–26), el pan de vida (6:25–59), la luz del mundo (8:12–9:41), el buen pastor (10:1–21) y la resurrección y la vida (11:17–27). Juan incluye las &quot;Yo soy&quot; (egō eimi) reveladoras: el pan de vida (6:35), la luz del mundo (8:12), la puerta de las ovejas (10:7), el buen pastor (10:11, 14), la resurrección y la vida (11:25), el camino, la verdad y la vida (14:6), y la vid verdadera (15:1).</p>\n<p>La última cena (caps. 13–17) es extensa: el lavatorio de los pies (13:1–20), la identificación del traidor (13:21–30), los discursos de despedida (14:1–16:33) y la oración sacerdotal (17:1–26), donde Jesús intercede por la unidad de los creyentes. La pasión (caps. 18–19) incluye el arresto en el huerto, la negación de Pedro, el juicio ante Anás, Caifás y Pilato, la escena de Ecce Homo (19:5), la crucifixión en el Pretorio, la entrega de la madre de Jesús a Juan (19:26–27), la sed, la muerte, la lanza que perfora el costado, y la sepultura en el huerto de José de Arimatea. La resurrección (caps. 20–21) presenta a Jesús ante María Magdalena (20:11–18), a los discípulos en el cenáculo (20:19–23), a Tomás que toca las heridas (20:24–29), y en la aparición en el mar de Tiberias (21:1–25), con la rehabilitación de Pedro. El propósito del evangelio se declara explícitamente: &quot;para que creáis que Jesús es el Cristo, el Hijo de Dios, y para que creyendo, tengáis vida en su nombre&quot; (20:31).</p>\n<p>Temas clave: Deidad de Cristo, Logos, señales, Espíritu Santo, vida eterna, unidad y amor.</p>",
+  "Hechos": "<h3>Biografía — Hechos</h3>\n<p>Autor tradicional: Lucas. Fecha estimada: c. 62–90 d.C. Capítulos: 28. Género: Historia/narrativa.</p>\n<p>Hechos es la continuación de Lucas y narra la expansión del cristianismo desde Jerusalén hasta Roma. La estructura sigue el mandato de 1:8: &quot;Seréis mis testigos en Jerusalén, en toda Judea y Samaria, y hasta lo último de la tierra&quot;. El capítulo 1 registra la ascensión y la elección de Matías como apóstol. Pentecostés (cap. 2) describe la venida del Espíritu Santo con viento, lenguas como de fuego y el don de lenguas, seguido del sermón de Pedro a los judíos, donde 3.000 personas se bautizan. La iglesia primitiva comparte bienes, celebra la eucaristía y crece (2:42–47; 4:32–37).</p>\n<p>Los milagros de los apóstoles incluyen la curación del cojo en la puerta Hermosa (3:1–10), la predicación ante el Sanedrín (4:1–22; 5:17–42), la muerte de Ananías y Safira (5:1–11), la elección de los diáconos (6:1–7), el martirio de Esteban (7:54–8:3) y la expansión a Samaria por Felipe (8:4–25). La conversión de Saulo (Pablo) en el camino de Damasco (9:1–19) es central. Pedro visita a Cornelio, el primer gentil convertido (10:1–11:18), y el concilio de Jerusalén (15:1–35) decide que los gentiles no necesitan circuncisión. La segunda mitad del libro (caps. 13–28) sigue los viajes misioneros de Pablo. Primero viaje (13–14): Chipre, Antioquía de Pisidia, Iconio, Listra (donde Pablo es apedreado y dejado por muerto). Segundo viaje (15:36–18:22): Filipos (conversión de Lidia y la cárcel), Tesalónica, Berea, Atenas (discurso en el Areópago), Corinto (18 meses). Tercer viaje (18:23–21:16): Éfeso (dos años, disturbio de los plateros), Macedonia, Grecia, Troas (resurrección de Eutico).</p>\n<p>Pablo regresa a Jerusalén, es arrestado en el templo (21:27–36), defendido ante la multitud (22:1–22), el Sanedrín (23:1–10) y el gobernador Félix (24:1–27). Félix lo deja en prisión dos años; Festo lo sucede. Pablo apela a César (25:1–12). El viaje a Roma (27:1–28:16) incluye el naufragio en Malta, la mordedura de la víbora y las curaciones en Publius. Pablo llega a Roma, alquila una casa y predica durante dos años &quot;a todos los que venían a él&quot; (28:30–31). Hechos termina abruptamente, posiblemente esperando el juicio de Pablo o la parusía.</p>\n<p>Temas clave: Espíritu Santo, testimonio, expansión misionera, iglesia, judíos y gentiles, martirio y justicia romana.</p>",
+  "Romanos": "<h3>Biografía — Romanos</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 56–57 d.C. Capítulos: 16. Género: Epístola doctrinal.</p>\n<p>Romanos es la obra teológica más sistemática de Pablo. Escrita desde Corinto durante su tercer viaje, destinada a la iglesia de Roma que Pablo aún no había visitado. El propósito es exponer el evangelio en su plenitud teológica: &quot;Porque no me avergüenzo del evangelio, porque es poder de Dios para salvación a todo aquel que cree; al judío primeramente, y también al griego&quot; (1:16). La estructura sigue una progresión lógica: pecado universal (1:18–3:20), justificación por la fe (3:21–5:21), santificación (6:1–8:39), el destino de Israel (9–11), y ética cristiana (12–16).</p>\n<p>Los capítulos 1–3 demuestran que todos, judíos y gentiles, están bajo pecado. La ley no justifica, sino que condena (3:20). La justificación es gratuita por gracia mediante la fe en Cristo (3:21–26). La fe de Abraham (4:1–25) es el paradigma: creó contra toda esperanza. La paz con Dios (5:1–11) y la entrada del pecado por Adán con la redención por Cristo (5:12–21) establecen la antropología y cristológía. Los capítulos 6–8 tratan la vida nueva: la muerte al pecado, la liberación de la ley, el conflicto interno del creyente (7:14–25) y la glorificación de la vida en el Espíritu (8:1–39). El capítulo 8 es la cumbre de la esperanza: la creación gime, Dios intercede, y nada puede separar del amor de Dios en Cristo (8:38–39).</p>\n<p>Los capítulos 9–11 responden a la pregunta de Israel: ¿ha fracasado la palabra de Dios? Pablo afirma la soberanía divina en la elección, el endurecimiento de Faraón, y el remanente de gracia. Israel tropezó en la piedra de tropiezo (9:32). La inclusión de los gentiles provocará la envidia de Israel (11:11–14). &quot;Porque de él, y por él, y para él, son todas las cosas&quot; (11:36). Los capítulos 12–15 son la aplicación ética: transformación por la renovación de la mente (12:1–2), servicio en el cuerpo, amor al prójimo, sometimiento a las autoridades, y consideración de los débiles en la libertad cristiana. El capítulo 16 saluda a numerosos individuos, incluyendo a Febe, diaconisa, y a Andronico y Junia, destacados entre los apóstoles. La doxología final (16:25–27) glorifica al Dios que puede establecer según el evangelio de Jesucristo.</p>\n<p>Temas clave: Justificación por fe, gracia, pecado, ley, Espíritu, Israel, ética cristiana y doxología.</p>",
+  "1 Corintios": "<h3>Biografía — 1 Corintios</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 53–54 d.C. Capítulos: 16. Género: Epístola pastoral/correctiva.</p>\n<p>1 Corintios es una respuesta a los problemas de una iglesia urbana próspera pero dividida. Pablo aborda divisiones, moralidad, litigios, matrimonio, libertad cristiana, adoración y resurrección. Los capítulos 1–4 tratan las divisiones: algunos se identifican con Pablo, Apolos, Cefas o Cristo. Pablo denuncia el orgullo intelectual griego: &quot;Dios escogió lo necio del mundo para avergonzar a los sabios&quot; (1:27). El mensaje de la cruz es locura para los gentiles y escándalo para los judíos, pero poder de Dios para los salvados (1:18–25). Los capítulos 5–6 abordan el incesto (un hombre con la mujer de su padre), la tolerancia del pueblo y los litigios ante tribunales paganos. &quot;¿O no sabéis que los santos han de juzgar al mundo?&quot; (6:2).</p>\n<p>El capítulo 7 trata el matrimonio, el celibato, la relación entre esposos, el divorcio, los matrimonios mixtos y la virginidad. Los capítulos 8–10 tratan la libertad cristiana y los alimentos sacrificados a ídolos: el conocimiento se hincha, pero el amor edifica (8:1). Pablo renuncia a sus derechos como apóstol (9:1–27) para ganar a más. El capítulo 10 usa el exodo como advertencia: los israelitas comieron el mismo maná espiritual, pero Dios no se complació en muchos de ellos (10:1–5). Los capítulos 11–14 regulan la adoración: la cabeza de la mujer (11:3–16), la cena del Señor (11:17–34), los dones espirituales (12:1–31), el cuerpo de Cristo con diversos miembros, el amor como camino más excelente (13:1–13), y el uso de lenguas y profecía en la asamblea (14:1–40). La mujer debe guardar silencio en la iglesia (14:34–35), texto muy debatido. El capítulo 15 es la catequesis más extensa sobre la resurrección: si no hay resurrección, la fe es vana (15:14). Cristo resucitó como primicias, seguido de los que durmieron en él. La resurrección del cuerpo es transformación de corruptible a incorruptible, mortal a inmortal (15:50–57). La victoria final es: &quot;Donde está, oh muerte, tu aguijón?&quot; (15:55). La colecta para los santos de Jerusalén (16:1–4) y los saludos (16:5–24) cierran la carta.</p>\n<p>Temas clave: Unidad, cruz, moralidad, libertad, amor, dones espirituales, resurrección y colecta.</p>",
+  "2 Corintios": "<h3>Biografía — 2 Corintios</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 55–56 d.C. Capítulos: 13. Género: Epístola autobiográfica/apologética.</p>\n<p>2 Corintios es una defensa del ministerio de Pablo contra los &quot;superapóstoles&quot; (falsos maestros que lo acusan de debilidad). Los capítulos 1–2 son consolatorios, explicando los cambios de itinerario y la reconciliación con el ofensor del capítulo 5 de 1 Corintios. Pablo describe su sufrimiento en Asia (1:8–11) como una carga mortal que enseñó a confiar en Dios. El capítulo 2:14–17 presenta al creyente como fragancia de Cristo: aroma de vida para los salvados, de muerte para los condenados.</p>\n<p>Los capítulos 3–5 son teológicos. El capítulo 3 contrasta el ministerio de la letra (Moisés con velo) y el ministerio del Espíritu (velo quitado en Cristo, 3:14–18). El capítulo 4 describe el tesoro en vasos de barro para que la excelencia del poder sea de Dios (4:7). La aflicción leve produce un peso eterno de gloria (4:17). El capítulo 5 enseña que la ausencia del cuerpo es presencia con el Señor (5:8), y presenta el ministerio de la reconciliación: &quot;Dios estaba en Cristo reconciliando consigo al mundo... Nos encargó a nosotros el ministerio de la reconciliación&quot; (5:19). La nueva creación en Cristo (5:17) y la imputación de la justicia (5:21) son fundamentales.</p>\n<p>Los capítulos 6–7 son exhortaciones a no recibir la gracia en vano (6:1), a separarse de los incrédulos (6:14–7:1) y a la alegría por el arrepentimiento de los corintios. Los capítulos 8–9 tratan la colecta para los pobres de Jerusalén, exaltando la generosidad de las iglesias de Macedonia (8:1–5) y la gracia de dar (9:6–15). Los capítulos 10–12 son la apologética más intensa: Pablo defiende su autoridad, su debilidad y sus visiones. &quot;El que se gloría, gloríese en el Señor&quot; (10:17). El capítulo 11 presenta la litote sarcástica: aunque sea insensato, Pablo compara su sufrimiento (azotes, naufragios, peligros, hambre, frío) con los &quot;superapóstoles&quot;. El capítulo 12 describe el éxtasis al paraíso (tercer cielo, 12:2–4) y la espina en la carne (12:7–10), para que el poder de Cristo resplandezca en su debilidad. La advertencia final (13:1–10) incluye la cita de Deuteronomio 19:15 sobre dos o tres testigos y la bendición final de la Trinidad (13:14).</p>\n<p>Temas clave: Reconciliación, debilidad y poder, ministerio, generosidad, visión, suficiente gracia y Trinidad.</p>",
+  "Gálatas": "<h3>Biografía — Gálatas</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 48–55 d.C. Capítulos: 6. Género: Epístola doctrinal/polemica.</p>\n<p>Gálatas es la carta más apasionada y breve de Pablo. Su propósito es combatir a los judaizantes que exigen la circuncisión para la salvación. Pablo defiende la justificación por fe sin obras de la ley. El capítulo 1 es autobiográfico: la autoridad de Pablo proviene directamente de Jesucristo, no de los apóstoles de Jerusalén. Su visita a Jerusalén tres años después de su conversión fue breve y consultiva; no recibió instrucción de Pedro (1:18–19). El capítulo 2 narra el incidente de Antioquía, donde Pablo reprendió a Pedro por apartarse de los gentiles por temor a los de la circuncisión (2:11–14). La tesis central se declara en 2:16–21: &quot;Sabiendo que el hombre no es justificado por las obras de la ley, sino por la fe de Jesucristo... porque por las obras de la ley ninguna carne será justificada&quot; (2:16). Pablo ha muerto a la ley para vivir para Dios en Cristo; &quot;no desecho la gracia de Dios, porque si por la ley viene la justicia, entonces por demás murió Cristo&quot; (2:21).</p>\n<p>El capítulo 3 argumenta que la promesa a Abraham precedió a la ley por 430 años y que la ley fue un pedagogo hasta Cristo (3:24–25). La fe en Cristo Jesús hace hijos de Abraham y herederos según la promesa (3:26–29). El capítulo 4 usa la alegoría de Agar y Sara, de Ismael e Isaac: los hijos de la esclava son por la ley, los de la libre por la promesa. &quot;Por tanto, hermanos, no somos hijos de la esclava, sino de la libre&quot; (4:31). El capítulo 5 exhorta a la libertad cristiana: &quot;Cristo nos libertó para que tuviésemos libertad; estad, pues, firmes, y no os sometáis otra vez al yugo de esclavitud&quot; (5:1). El fruto del Espíritu (5:22–23) contrasta con las obras de la carne (5:19–21). El capítulo 6 cierra con la ley de Cristo (cargar los unos con las cargas de los otros), la siembra y cosecha, y la gloriación en la cruz de Cristo (6:14).</p>\n<p>Temas clave: Justificación por fe, libertad cristiana, ley vs. promesa, fruto del Espíritu y nueva creación.</p>",
+  "Efesios": "<h3>Biografía — Efesios</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 60–62 d.C. Capítulos: 6. Género: Epístola doctrinal/étnica.</p>\n<p>Efesios es una carta de prisión, posiblemente escrita desde Roma. La primera mitad (caps. 1–3) es teológica; la segunda (caps. 4–6) es práctica. El capítulo 1 es una benedición sobre la elección predestinada en Cristo antes de la fundación del mundo (1:4), la redención por su sangre, el sellado del Espíritu Santo como garantía de la herencia (1:13–14), y la oración de que los ojos del entendimiento sean iluminados para conocer la esperanza del llamamiento, la gloria de la herencia y la supereminente grandeza del poder de Dios (1:15–23). El capítulo 2 enseña la muerte por pecado y la vida por gracia: &quot;Porque por gracia sois salvos por medio de la fe... no por obras, para que nadie se gloríe&quot; (2:8–9). La paz entre judíos y gentiles en un solo cuerpo (2:11–22) es la reconciliación horizontal y vertical; Cristo es nuestra paz, y el muro de separación (el muro de las lamentaciones) ha sido derribado.</p>\n<p>El capítulo 3 revela el misterio: que los gentiles son coherederos, miembros del mismo cuerpo, y copartícipes de la promesa en Cristo por el evangelio (3:6). La oración por el conocimiento del amor de Cristo que excede a todo conocimiento (3:14–19) conduce a la doxología de la gloria en la iglesia (3:20–21). El capítulo 4 insta a la unidad del cuerpo: &quot;Un solo cuerpo, un solo Espíritu... un Señor, una fe, un bautismo&quot; (4:4–6). Los ministerios (apóstoles, profetas, evangelistas, pastores y maestros) edifican el cuerpo hasta la madureza (4:11–16). La conducta nueva incluye la verdad, el control de la ira, el trabajo, la edificación con las palabras, la bondad, el perdón y la imitación de Dios (4:17–5:2). El capítulo 5 trata la conducta en la familia: esposos y esposas (como Cristo y la iglesia), hijos y padres, siervos y amos. El capítulo 6 exhorta a los hijos, padres, siervos y amos, y concluye con la descripción de la armadura de Dios: cinturón de la verdad, coraza de justicia, calzado del evangelio de la paz, escudo de la fe, yelmo de la salvación, espada del Espíritu (palabra de Dios) y la oración constante (6:10–20). La carta finaliza con la mención de Tíquico (6:21–22) y la bendición de la paz.</p>\n<p>Temas clave: Unidad de la iglesia, misterio de los gentiles, gracia, nueva vida, familia cristiana y armadura espiritual.</p>",
+  "Filipenses": "<h3>Biografía — Filipenses</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 60–62 d.C. Capítulos: 4. Género: Epístola pastoral/íntima.</p>\n<p>Filipenses es la carta más personal y gozosa de Pablo, escrita desde la prisión en Roma. La iglesia de Filipos, fundada en la segunda visita misionera (Hechos 16), fue generosa en su apoyo financiero. El capítulo 1 expresa la gratitud por la participación en el evangelio desde el primer día (1:5). La oración por el crecimiento en amor y discernimiento (1:9–11) conduce a la reflexión sobre el avance del evangelio aunque Pablo esté preso (1:12–14). El dilema entre vivir (fructificar) y morir (estar con Cristo) es resuelto con la preferencia por la partida, pero la utilidad para la iglesia le inclina a permanecer (1:21–26). La exhortación a la humildad (1:27–2:4) cita el himno cristológico de 2:5–11.</p>\n<p>El himno de Filipenses 2:6–11 es la descripción más profunda de la kenosis: Cristo, siendo en forma de Dios, no consideró el ser igual a Dios como algo a que aferrarse, sino que se despojó a sí mismo, tomando forma de siervo, humillándose hasta la muerte en cruz. Por esto Dios lo exaltó y le dio el nombre sobre todo nombre, para que toda rodilla se doble y toda lengua confiese que Jesucristo es Señor. Los capítulos 2:12–18 exhortan a la obediencia con temor y temblor, &quot;porque Dios es el que en vosotros produce el querer como el hacer, por su buena voluntad&quot; (2:13). El envío de Timoteo y Epafrodito (2:19–30) demuestra la amistad. El capítulo 3 es autobiográfico y polémico: Pablo rechaza la confianza en la carne (circuncisión, linaje benjaminita, fariseo, perseguidor de la iglesia). &quot;Pero lo que para mí era ganancia, lo he estimado como pérdida por amor de Cristo&quot; (3:7). Su meta es conocer a Cristo, la virtud de su resurrección, la participación en sus padecimientos, y ser hallado en él, no con mi propia justicia por la ley, sino por la fe de Cristo (3:8–9). La llamada hacia el premio (3:12–16) y la ciudadanía en el cielo (3:20) anticipan la transformación del cuerpo de humillación a la conformidad con el cuerpo de gloria de Cristo (3:21). El capítulo 4 exhorta a la alegría, la oración con acción de gracias, la paz de Dios que sobrepasa todo entendimiento (4:6–7), y el pensamiento en lo verdadero, honesto, justo, puro, amable, de buen nombre, virtuoso y loable (4:8). La carta cierra con el agradecimiento por el apoyo financiero y la promesa de que Dios suplirá toda necesidad según sus riquezas en gloria en Cristo Jesús (4:19).</p>\n<p>Temas clave: Alegría, kenosis, humildad, justicia por fe, ciudadanía celestial, provisión y paz.</p>",
+  "Colosenses": "<h3>Biografía — Colosenses</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 60–62 d.C. Capítulos: 4. Género: Epístola doctrinal/polemica.</p>\n<p>Colosenses combina elevada cristológía con advertencia contra el gnosticismo y la filosofía humana. El capítulo 1 presenta la preeminencia de Cristo: &quot;El cual es la imagen del Dios invisible, el primogénito de toda la creación; porque en él fueron creadas todas las cosas... visibles e invisibles, sean tronos, sean dominios, sean principados, sean potestades; todo fue creado por medio de él y para él&quot; (1:15–16). Cristo es la cabeza del cuerpo, la iglesia (1:18), y la plenitud de la Deidad habita corporalmente en él (2:9). La reconciliación mediante la sangre de su cruz (1:20) aplica a todos los creyentes, quienes son trasladados del reino de las tinieblas al reino del Hijo (1:13). La oración de Pablo (1:9–14) busca el conocimiento de la voluntad de Dios.</p>\n<p>El capítulo 2 combate la filosofía, el ascetismo y la adoración de ángeles. &quot;Mirad que nadie os engañe por medio de filosofías y vanas sutilezas, según las tradiciones de los hombres, conforme a los rudimentos del mundo, y no según Cristo&quot; (2:8). En Cristo están escondidos todos los tesoros de la sabiduría y la ciencia (2:3). La circuncisión espiritual (2:11), el bautismo como sepultura y resurrección con él (2:12), y la cancelación de la deuda de los mandamientos (2:14) son fundamentos. &quot;Despojó a los principados y a las potestades, y los exhibió públicamente, triunfando sobre ellos en la cruz&quot; (2:15). Los capítulos 3–4 son éticos: buscar las cosas de arriba (3:1–4), matar la fornicación, impureza, avaricia, ira, maldad y mentira. Vestir el nuevo hombre con entrañas de misericordia, bondad, humildad, mansedumbre, paciencia y sobre todo amor (3:12–14). La paz de Cristo arbitre en el corazón y la palabra de Cristo habite abundantemente (3:15–16). Las instrucciones para el hogar (3:18–4:1) y la oración perseverante (4:2–4) cierran la carta. Los saludos incluyen a Onésimo, el esclavo fugitivo convertido, y a Tíquico.</p>\n<p>Temas clave: Preeminencia de Cristo, creación, plenitud, reconciliación, triunfo sobre potestades, nueva vida y oración.</p>",
+  "1 Tesalonicenses": "<h3>Biografía — 1 Tesalonicenses</h3>\n<p>Autor tradicional: Pablo, Silvano y Timoteo. Fecha estimada: c. 50–51 d.C. Capítulos: 5. Género: Epístola pastoral/escatológica.</p>\n<p>1 Tesalonicenses es la carta más antigua del Nuevo Testamento. Pablo escribe a la iglesia fundada en la segunda visita misionera (Hechos 17). El capítulo 1 agradece la fe, amor y esperanza de los tesalonicenses, notando que ellos se convirtieron de los ídolos para servir al Dios vivo y esperar la venida de su Hijo desde los cielos (1:9–10). El capítulo 2 defiende la integridad del ministerio de Pablo: no fue con engaño, codicia ni adulación, sino como una nodriza que amamanta a sus hijos (2:7). La oposición de los judíos en Tesalónica se describe con amargura (2:14–16). El capítulo 3 narra la angustia de Pablo por no poder visitar, enviando a Timoteo para fortalecerlos. El capítulo 4 es la catequesis más extensa sobre la parusía en el Nuevo Testamento: los que durmieron en Jesús resucitarán primero, y los que vivimos seremos arrebatados juntamente con ellos en las nubes para recibir al Señor en el aire (4:13–18). Este texto es la base de la doctrina del arrebatamiento. El capítulo 5 exhorta a la vigilancia, porque el día del Señor vendrá como ladrón en la noche. Los creyentes no son de tinieblas sino de luz; vistan la coraza de fe y amor, y el yelmo de la esperanza de la salvación (5:8). La oración final pide la santificación completa del espíritu, alma y cuerpo (5:23). La paz de Dios sea con todos.</p>\n<p>Temas clave: Parusía, resurrección, arrebatamiento, ministerio, esperanza, santificación y vigilancia.</p>",
+  "2 Tesalonicenses": "<h3>Biografía — 2 Tesalonicenses</h3>\n<p>Autor tradicional: Pablo, Silvano y Timoteo. Fecha estimada: c. 51–52 d.C. Capítulos: 3. Género: Epístola pastoral/escatológica.</p>\n<p>2 Tesalonicenses corrige malentendidos sobre el día del Señor. Algunos creyentes habían dejado de trabajar, pensando que la parusía era inminente. El capítulo 1 describe la venida de Cristo en gloria con sus ángeles poderosos, en llamas de fuego, para venganza contra los que no conocieron a Dios ni obedecieron al evangelio (1:6–8). El capítulo 2 trata la &quot;apostasía&quot; (apostasía) y la revelación del &quot;hombre de pecado&quot;, el &quot;hijo de perdición&quot;, que se sienta en el templo de Dios como si fuera Dios (2:3–4). Pablo recuerda que había hablado de esto cuando estaba con ellos. El misterio de la iniquidad ya actúa, pero hay un katechon (retenedor) que lo retiene. Cuando el que lo retiene sea quitado, entonces será revelado el inicuo. El Señor Jesús lo destruirá con el espíritu de su boca y con el resplandor de su venida (2:8). La actividad de Satanás con señales, prodigios y engaños injustos (2:9–10) condena a los que no recibieron el amor de la verdad. El capítulo 3 exhorta a la oración y al trabajo. La disciplina de los ociosos es severa: &quot;Si alguno no quiere trabajar, tampoco coma&quot; (3:10). Pablo renuncia a los que andan desordenadamente, con toda confianza en la obediencia de los tesalonicenses.</p>\n<p>Temas clave: Parusía, apostasía, hombre de pecado, retenedor, disciplina, trabajo y oración.</p>",
+  "1 Timoteo": "<h3>Biografía — 1 Timoteo</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 62–64 d.C. Capítulos: 6. Género: Epístola pastoral.</p>\n<p>1 Timoteo es una carta de instrucciones para el liderazgo de la iglesia. Timoteo es un joven discípulo de Pablo a quien se le encarga la iglesia de Éfeso. El capítulo 1 advierte contra las fábulas y genealogías interminables que generan contiendas. La ley es buena si se usa legítimamente: para los injustos, insubordinados, impíos, pecadores, etc. La gracia de Dios se manifestó salvando a Pablo, el principal de los pecadores (1:15). El capítulo 2 instruye sobre la oración pública por los gobernantes, para que vivamos en toda piedad y honestidad (2:1–2). Dios quiere que todos los hombres se salven y vengan al conocimiento de la verdad (2:4). Hay un solo mediador entre Dios y los hombres: Cristo Jesús, hombre, que se dio a sí mismo en rescate por todos (2:5–6). La instrucción a las mujeres incluye vestirse con modestia, aprender en silencio con toda sujeción, y no enseñar ni ejercer dominio sobre el hombre (2:9–15), un texto debatido sobre el authentein.</p>\n<p>El capítulo 3 describe los requisitos para los obispos (epískopos) y diáconos: irrepreensibles, marido de una sola mujer, sobrios, prudentes, de buena conducta, hospitalarios, aptos para enseñar, no dados al vino, no contenciosos, gobernantes de sus propias casas, no codiciosos. Los diáconos deben ser probados primero. El capítulo 4 predice la apostasía posterior, con prohibiciones de casarse y de comer alimentos que Dios creó para que se reciban con acción de gracias (4:1–5). Timoteo debe ejercitarse en la piedad, que tiene promesa para la vida presente y la venidera (4:8). El capítulo 5 instruye sobre el trato a los ancianos (honrarlos como a padres), a las viudas (las que son de verdad, sin familia, piadosas, de edad avanzada), y la disciplina de los presbíteros (5:17–25). No recibas acusación contra un anciano sino con dos o tres testigos. El capítulo 6 trata a los siervos, los falsos maestros codiciosos, y la raíz de todos los males: el amor al dinero (6:10). &quot;Lucha la buena batalla de la fe, echa mano de la vida eterna&quot; (6:12). La confesión ante Pilato es testimonio (6:13). La doxología final (6:15–16) describe al único soberano, Rey de reyes y Señor de señores, inmortal, que habita en luz inaccesible.</p>\n<p>Temas clave: Liderazgo eclesial, oración, mediación, gracia, apostasía, piedad, disciplina y riquezas.</p>",
+  "2 Timoteo": "<h3>Biografía — 2 Timoteo</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 66–67 d.C. Capítulos: 4. Género: Epístola pastoral/testamento.</p>\n<p>2 Timoteo es el testamento espiritual de Pablo, escrito probablemente desde la segunda prisión en Roma, poco antes de su martirio. El capítulo 1 agradece la fe sincera de Timoteo, heredada de su madre Eunice y su abuela Loida (1:5). Pablo exhorta a no avergonzarse del testimonio de Cristo ni de él, preso, sino a participar en las aflicciones del evangelio según el poder de Dios (1:8). Dios nos salvó y llamó con santo llamamiento, no conforme a nuestras obras, sino según su propósito y gracia (1:9). Pablo está preso, pero la palabra de Dios no está presa (2:9). El capítulo 2 es una serie de imágenes: el hijo del soldado, el atleta, el labrador, el obrero que no tiene de qué avergonzarse, el vaso de honra, y la casa donde hay vasos de oro y de barro. El capítulo 3 predice los tiempos peligrosos de los últimos días: hombres amadores de sí mismos, avaros, jactanciosos, soberbios, blasfemos, desobedientes a los padres, ingratos, impíos, sin afecto natural, implacables, calumniadores, intemperantes, crueles, aborrecedores de lo bueno, traidores, impetuosos, infatuados, amadores de los deleites más que de Dios, y apariencia de piedad pero negando la eficacia de ella (3:1–5). Timoteo debe perseverar en lo que aprendió y fue persuadido, sabiendo de quién lo aprendió (3:14). &quot;Toda la Escritura es inspirada por Dios, y útil para enseñar, para redargüir, para corregir, para instruir en justicia, a fin de que el hombre de Dios sea perfecto, enteramente preparado para toda buena obra&quot; (3:16–17). Este es el texto clásico sobre la inspiración bíblica.</p>\n<p>El capítulo 4 es la carga final: &quot;Te encarezco delante de Dios y de Jesucristo, que juzgará a los vivos y a los muertos en su manifestación y en su reino, que prediques la palabra; que instes a tiempo y fuera de tiempo; redarguye, reprende, exhorta con toda paciencia y doctrina&quot; (4:1–2). La gente no soportará la sana doctrina, sino que amontonará maestros conforme a sus propias concupiscencias, y apartará los oídos de la verdad para volverse a las fábulas (4:3–4). Pablo declara su vida cumplida: &quot;He peleado la buena batalla, he acabado la carrera, he guardado la fe. Por lo demás, me está guardada la corona de justicia, la cual me dará el Señor, juez justo, en aquel día; y no sólo a mí, sino también a todos los que aman su venida&quot; (4:7–8). La solicitud de que Timoteo traiga el capote y los libros, especialmente los pergaminos (4:13), y la advertencia sobre Alejandro el calderero (4:14–15) son detalles autobiográficos conmovedores. La soledad de Pablo: &quot;Todos me desampararon&quot; (4:16), excepto Lucas. El Señor estuvo con él y lo libró de toda mala obra (4:17–18). La carta cierra con saludos y la gracia.</p>\n<p>Temas clave: Martirio, perseverancia, inspiración de la Escritura, predicación, apostasía y corona de justicia.</p>",
+  "Tito": "<h3>Biografía — Tito</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 62–64 d.C. Capítulos: 3. Género: Epístola pastoral.</p>\n<p>Tito es una carta breve sobre el orden eclesial y la gracia en Creta. Pablo dejó a Tito en Creta para organizar las iglesias y designar ancianos (1:5). Los requisitos de los ancianos (epískopos) se repiten: irrepreensibles, marido de una sola mujer, hijos creyentes, no acusados de disolución ni de rebeldía. Deben ser aptos para exhortar en la sana doctrina y convencer a los que contradicen (1:9). Creta es famosa por sus mentirosos, bestias malas y glotones ociosos (1:12), citando a un profeta cretense. Los capítulos 2–3 son instrucciones éticas: los ancianos deben ser sobrios, graves, prudentes, sanos en fe, amor y paciencia; las ancianas deben ser reverentes, no calumniadoras, no enseñadoras del vino; las jóvenes deben amar a sus maridos y a sus hijos; los jóvenes deben ser sobrios; los siervos obedientes. Todo esto para que la palabra de Dios no sea blasfemada (2:5, 8, 10). La gracia de Dios se ha manifestado para salvación a todos los hombres, enseñándonos a renunciar a la impiedad y a las pasiones mundanas, y a vivir sobria, justa y piadosamente en este mundo (2:11–12). La esperanza bendita es la aparición gloriosa de nuestro gran Dios y Salvador Jesucristo, que se dio a sí mismo por nosotros para redimirnos de toda iniquidad y purificar para sí un pueblo propio, celoso de buenas obras (2:13–14).</p>\n<p>El capítulo 3 recuerda que éramos insensatos, rebeldes, extraviados, esclavos de concupiscencias y deleites, viviendo en malicia y envidia, aborrecibles y aborreciendo a otros. Pero cuando se manifestó la bondad de Dios nuestro Salvador y su amor para con los hombres, no por obras de justicia que nosotros hubiéramos hecho, sino por su misericordia, nos salvó por el lavamiento de la regeneración y la renovación del Espíritu Santo (3:4–5). Justificados por su gracia, seamos herederos de la vida eterna (3:7). La exhortación final es a ocuparse en buenas obras y evitar contiendas y genealogías estériles (3:9). Rechaza al hombre herético después de una primera y segunda amonestación (3:10). Tito debe ir a Nicópolis y traer a Zenas y Apolos (3:12–13). La gracia sea con todos.</p>\n<p>Temas clave: Gracia, redención, liderazgo, buenas obras, regeneración, sana doctrina y comunidad.</p>",
+  "Filemón": "<h3>Biografía — Filemón</h3>\n<p>Autor tradicional: Pablo. Fecha estimada: c. 60–62 d.C. Capítulos: 1. Género: Epístola personal.</p>\n<p>Filemón es la carta más breve de Pablo y una obra maestra de persuasión cristiana. Pablo escribe desde la prisión a Filemón, un cristiano de Colosas, cuyo esclavo Onésimo había huido a Roma y allí se había convertido por medio de Pablo. La carta no aborda directamente la institución de la esclavitud, pero transforma la relación: Pablo pide a Filemón que reciba a Onésimo no como esclavo, sino como &quot;hermano amado&quot; (16). Pablo ofrece pagar cualquier deuda de Onésimo con su propia cuenta (18–19), aunque le recuerda que le debe su propia vida (19). La carta es un modelo de intercesión, amor, justicia y redención. Incluye saludos a Apia (la esposa de Filemón), a Arquipo y a la iglesia en su casa. La gracia de Jesucristo sea con el espíritu de todos. Filemón es un texto fundacional para la ética cristiana y la relación interpersonal en el evangelio.</p>\n<p>Temas clave: Redención, intercesión, reconciliación, hermandad cristiana, justicia y amor.</p>",
+  "Hebreos": "<h3>Biografía — Hebreos</h3>\n<p>Autor tradicional: Anónimo (debate: Pablo, Apolos, Bernabé, Priscila). Fecha estimada: c. 64–70 d.C. Capítulos: 13. Género: Sermón/tractado teológico.</p>\n<p>Hebreos es una exhortación sofisticada a judíos cristianos para que no abandonen la fe. El prólogo (1:1–4) presenta al Hijo como heredero de todas las cosas, por quien hizo el universo, el resplandor de la gloria y la imagen exacta de su sustancia. La superioridad del Hijo sobre los ángeles (1:5–2:18) se basa en la filiación divina y en su condescendencia humana para ser el sumo sacerdote misericordioso. &quot;Porque ciertamente no tomó a los ángeles, sino que tomó la descendencia de Abraham&quot; (2:16). Los capítulos 3–4 comparan a Jesús con Moisés y Josué, presentando el sábado espiritual: &quot;Entremos, pues, con confianza en el trono de la gracia, para alcanzar misericordia y hallar gracia para el oportuno socorro&quot; (4:16).</p>\n<p>El capítulo 5–7 presenta la superioridad del sacerdocio de Melquisedec sobre el de Aarón. Melquisedec, rey de Salem y sacerdote del Dios Altísimo, aparece sin genealogía, sin principio ni fin de días, hecho semejante al Hijo de Dios (7:3). Jesús es sacerdote &quot;según el orden de Melquisedec&quot; (6:20), con un juramento que el antiguo sacerdocio no tenía. El capítulo 8–10 desarrolla el nuevo pacto: la antigua sombra del bien venidero; el nuevo pacto con leyes escritas en el corazón, y el perdón de los pecados (8:7–13, citando Jeremías 31:31–34). El santuario terrenal es figura del celestial; Cristo entró una vez para siempre en el Lugar Santísimo con su propia sangre, obteniendo redención eterna (9:12). La sangre de Cristo limpia la conciencia de las obras muertas para servir al Dios vivo (9:14). El capítulo 10 es la cúspide: la voluntad de Dios se cumple en la ofrenda de Cristo; &quot;sacrificio por el pecado no ofreciste, pero un cuerpo me preparaste&quot; (10:5). Podemos entrar en el santuario por la sangre de Jesús, con corazón limpio y cuerpo lavado con agua pura (10:22). La exhortación a perseverar (10:19–39) incluye la advertencia terrible: &quot;¿De cuánto mayor castigo seréis juzgados dignos...?&quot; (10:29). &quot;Pero nosotros no somos de los que se vuelven atrás para perdición, sino de los que tienen fe para salvación del alma&quot; (10:39).</p>\n<p>Los capítulos 11–13 son la exhortación final. El &quot;salón de la fama de la fe&quot; (11:1–40) enumera los héroes del Antiguo Testamento: Abel, Enoc, Noé, Abraham, Sara, Isaac, Jacob, José, Moisés, la Pasqua, la travesía del Mar Rojo, la caída de los muros de Jericó, Rahab, Gedeón, Barac, Sansón, Jefté, David, Samuel, los profetas, &quot;que por fe vencieron reinos, hicieron justicia, alcanzaron promesas... de débiles fueron hechos fuertes&quot; (11:33–34). La nube de testigos (12:1) exhorta a despojarse de todo peso y del pecado que nos asedia, corriendo con paciencia la carrera, puesto los ojos en Jesús, el autor y consumador de la fe (12:1–2). El castigo disciplinario de Dios es amoroso (12:4–13). No se ha llegado al monte Sinaí, sino al monte Sion, a la ciudad del Dios vivo, a la Jerusalén celestial, a millones de ángeles, a la congregación de los primogénitos, a Dios juez de todos, a los espíritus de los justos hechos perfectos, y a Jesús, mediador del nuevo pacto (12:18–24). La exhortación final (13:1–25) incluye amor fraternal, hospitalidad, matrimonio, contentamiento, obediencia a los líderes, y la ofrenda perpetua de alabanza. &quot;Jesucristo es el mismo ayer, y hoy, y por los siglos&quot; (13:8). La sangre del pacto es eterna (13:20). La gracia sea con todos.</p>\n<p>Temas clave: Superioridad de Cristo, sacerdocio de Melquisedec, nuevo pacto, sacrificio único, fe, perseverancia y disciplina.</p>",
+  "Santiago": "<h3>Biografía — Santiago</h3>\n<p>Autor tradicional: Santiago, hermano del Señor y líder de la iglesia de Jerusalén. Fecha estimada: c. 45–50 d.C. Capítulos: 5. Género: Epístola de sabiduría/ética.</p>\n<p>Santiago es una epístola de sabiduría práctica, similar a los Proverbios y la literatura sapiencial. El autor se identifica como &quot;siervo de Dios y del Señor Jesucristo, Santiago&quot; (1:1). El capítulo 1 exhorta a la prueba de la fe como ocasión de gozo, pues la prueba de la fe produce paciencia, y la paciencia tiene su obra completa para que seáis perfectos (1:2–4). Si alguno tiene falta de sabiduría, pídala a Dios que da a todos abundantemente y sin reproche (1:5). El que duda es como la onda del mar (1:6). El pobre debe gloriarse en su exaltación, el rico en su humillación (1:9–11). La prueba por la propia concupiscencia no viene de Dios, sino de la carne (1:13–15). Toda buena dádiva y todo don perfecto desciende del Padre de las luces, en quien no hay mudanza ni sombra de variación (1:17). Sed hacedores de la palabra, no tan solamente oidores (1:22–25). La religión pura y sin mácula es visitar a los huérfanos y a las viudas en sus tribulaciones, y guardarse sin mancha del mundo (1:27).</p>\n<p>El capítulo 2 trata la fe y las obras: &quot;La fe, si no tiene obras, es muerta en sí misma&quot; (2:17). Abraham ofreció a Isaac sobre el altar, y la fe se completó con las obras (2:21–22). Así también Rahab la ramera fue justificada por las obras cuando recibió a los mensajeros y los envió por otro camino (2:25). &quot;Como el cuerpo sin espíritu está muerto, así también la fe sin obras es muerta&quot; (2:26). El capítulo 3 enseña sobre la lengua: es un pequeño miembro pero se gloría de grandes cosas. La lengua es un fuego, un mundo de maldad, que contamina todo el cuerpo (3:6). Con la lengua bendecimos a Dios y maldecimos a los hombres hechos a su imagen (3:9). La sabiduría que viene de arriba es pura, pacífica, amable, benigna, llena de misericordia y buenos frutos (3:17). El capítulo 4 trata las guerras y contiendas de las concupiscencias, la amistad del mundo como enemistad con Dios, la soberbia, la confianza en los planes humanos (&quot;Hoy y mañana iremos a tal ciudad...&quot;) y la necesidad de sometimiento a Dios: &quot;Resistid al diablo, y huirá de vosotros&quot; (4:7). El capítulo 5 denuncia a los ricos que acumulan riquezas podridas, han defraudado los jornales de los obreros, y viven en placeres y deleites. La paciencia de los labradores esperando la lluvia temprana y tardía es modelo de la paciencia para la venida del Señor (5:7). No os juréis ni por el cielo ni por la tierra (5:12). La oración de fe salvará al enfermo, y el Señor lo levantará (5:15). El que haya hecho errar al justo deberá volver a traerle (5:19–20). La gracia sea con todos.</p>\n<p>Temas clave: Fe y obras, sabiduría práctica, lengua, riqueza, oración, paciencia y justicia social.</p>",
+  "1 Pedro": "<h3>Biografía — 1 Pedro</h3>\n<p>Autor tradicional: Pedro, apóstol. Fecha estimada: c. 60–64 d.C. Capítulos: 5. Género: Epístola general.</p>\n<p>1 Pedro es una carta de consuelo y exhortación a cristianos que sufren persecución en el imperio romano. Los destinatarios son judíos cristianos dispersos en el Ponto, Galacia, Capadocia, Asia y Bitinia (1:1). La elección según la presciencia del Padre, la santificación por el Espíritu, y la aspersión de la sangre de Jesucristo (1:2) establecen la identidad. La herencia incorruptible, incontaminada e inmarchitable está guardada en los cielos (1:4). Aunque ahora tengáis que ser afligidos por diversas pruebas, para que sea hallada genuina vuestra fe (1:6–7). Los profetas del Antiguo Testamento inquirieron y escudriñaron acerca de la gracia destinada a vosotros (1:10–12). Sed santos, como santo es aquel que os llamó (1:15–16). La redención no fue con oro corruptible, sino con la sangre preciosa de Cristo (1:18–19).</p>\n<p>El capítulo 2 describe a los creyentes como piedras vivas edificadas sobre la piedra angular (Cristo), para ser casa espiritual y sacerdocio santo (2:4–5). &quot;He aquí, pongo en Sion una piedra principal de esquina, escogida, preciosa; y el que crea en él, no será avergonzado&quot; (2:6). Vosotros sois linaje escogido, real sacerdocio, nación santa, pueblo adquirido para proclamar las virtudes de aquel que os llamó de las tinieblas a su luz admirable (2:9). Sométanse a toda institución humana por amor al Señor (2:13). Los siervos, sometáos a vuestros amos, no sólo a los buenos y moderados, sino también a los difíciles de soportar (2:18). Cristo padeció por nosotros, dejándonos ejemplo para que sigáis sus pasos (2:21). El capítulo 3 trata a las esposas y esposos, la santidad, la esperanza y la defensa de la fe. &quot;Antes bien, santificad a Dios el Señor en vuestros corazones, y estad siempre preparados para responder a todo el que os demande razón de la esperanza que hay en vosotros&quot; (3:15). El capítulo 4 exhorta a la armonía, la hospitalidad, el uso de los dones, y la alegría en el sufrimiento por el nombre de Cristo (4:12–19). El capítulo 5 instruye a los ancianos del rebaño, no por fuerza, sino voluntariamente; no por ganancia deshonesta, sino con ánimo pronto; no como teniendo señorío sobre los que están a vuestro cuidado, sino siendo ejemplos del rebaño (5:2–3). El diablo, como león rugiente, anda buscando a quien devorar (5:8). Resistid firmes en la fe (5:9). La gracia sea con todos.</p>\n<p>Temas clave: Sufrimiento, esperanza, sacerdocio real, sumisión, Cristo ejemplo, defensa de la fe y humildad.</p>",
+  "2 Pedro": "<h3>Biografía — 2 Pedro</h3>\n<p>Autor tradicional: Pedro, apóstol. Fecha estimada: c. 64–68 d.C. Capítulos: 3. Género: Epístola general/escatológica.</p>\n<p>2 Pedro es una carta de advertencia contra los falsos maestros y una afirmación de la venida de Cristo. El capítulo 1 recuerda la fe preciosa por igualidad, y la gracia y la paz multiplicadas por el conocimiento de Dios y de Jesús nuestro Señor (1:2). Mediante su divino poder nos ha dado todo lo que pertenece a la vida y a la piedad (1:3). Por esto mismo, haciendo todo esfuerzo, añadid a vuestra fe virtud, a la virtud conocimiento, al conocimiento dominio propio, al dominio propio paciencia, a la paciencia piedad, a la piedad afecto fraternal, y al afecto fraternal amor (1:5–7). El que hace estas cosas no caerá jamás (1:10). El capítulo 1:16–21 defiende la transfiguración como experiencia visual real, no fábula: &quot;Porque no os hemos dado a conocer el poder y la venida de nuestro Señor Jesucristo siguiendo fábulas artificiales, sino como habiendo visto con nuestros propios ojos su majestad&quot; (1:16). La profecía de la Escritura no es de interpretación privada, sino que los hombres santos de Dios hablaron siendo inspirados por el Espíritu Santo (1:21).</p>\n<p>El capítulo 2 describe a los falsos maestros que traerán herejías destructivas, negando al Señor que los rescató (2:1). El juicio sobre ellos es seguro: los ángeles que pecaron fueron arrojados al infierno; el mundo antiguo fue destruido con agua; Sodoma y Gomorra fueron reducidas a ceniza (2:4–9). Estos impíos, criaturas irracionales, maldicen las cosas que no entienden, y serán destruidos en su propia corrupción (2:12). Han dejado el camino recto, andando tras la vía de Balaam (2:15). El capítulo 3 trata la escatología: los escarnecedores vendrán en los postreros días, diciendo: &quot;¿Dónde está la promesa de su venida?&quot; (3:3–4). El cielo y la tierra existen ahora por la palabra de Dios, reservados para el fuego (3:7). Para el Señor un día es como mil años, y mil años como un día (3:8). El Señor no retarda su promesa, sino que es paciente para con nosotros, no queriendo que ninguno perezca, sino que todos procedan al arrepentimiento (3:9). El día del Señor vendrá como ladrón en la noche; los cielos pasarán con grande estruendo, y los elementos ardiendo serán deshechos, y la tierra y las obras que en ella hay serán quemadas (3:10). Pero nosotros, según su promesa, esperamos cielos nuevos y tierra nueva, en los cuales mora la justicia (3:13). Acrecentad, pues, en la santidad y en la piedad (3:11). La gracia sea con todos.</p>\n<p>Temas clave: Conocimiento, virtud, transfiguración, falsos maestros, juicio, creación, escatología y paciencia divina.</p>",
+  "1 Juan": "<h3>Biografía — 1 Juan</h3>\n<p>Autor tradicional: Juan, el discípulo amado. Fecha estimada: c. 85–95 d.C. Capítulos: 5. Género: Epístola general/teológica.</p>\n<p>1 Juan es un sermón cíclico sobre la vida, la luz y el amor. No tiene saludo formal ni nombres propios. El prólogo (1:1–4) presenta al Verbo de vida que era desde el principio, que oímos, que vimos con nuestros ojos, que contemplamos, y que palparamos con nuestras manos. Dios es luz, y no hay ningunas tinieblas en él (1:5). Si decimos que tenemos comunión con él, y andamos en tinieblas, mentimos (1:6). Si confesamos nuestros pecados, él es fiel y justo para perdonar (1:9). El capítulo 2 presenta a Cristo como abogado (parakletos) con el Padre, y como propiciación por nuestros pecados (2:1–2). El conocimiento de él que está desde el principio, el conocimiento del Padre, y el conocimiento del Hijo son bases de la comunidad. El amor al mundo (las concupiscencias de la carne, los ojos y la vida) es enemistad con el Padre (2:15–16). El anticristo ya viene, y hay muchos anticristos (2:18). El que niega al Padre y al Hijo es anticristo (2:22). Lo que habéis oído desde el principio, permanezca en vosotros (2:24). Su ungión os enseña acerca de todas las cosas (2:27).</p>\n<p>El capítulo 3 afirma que somos hijos de Dios, y aun no se ha manifestado lo que hemos de ser; pero sabemos que cuando él se manifieste, seremos semejantes a él (3:2). El que permanece en él no peca (3:6). El que practica el pecado es del diablo (3:8). El que no ama a su hermano, permanece en muerte (3:14). El que aborrece a su hermano es homicida (3:15). El amor se conoce en que Cristo puso su vida por nosotros; nosotros debemos poner nuestra vida por los hermanos (3:16). El amor no es de palabras, sino de hechos (3:18). Si nuestro corazón no nos reprende, confianza tenemos para con Dios (3:21). El capítulo 4 prueba a los espíritus: &quot;Todo espíritu que confiesa que Jesucristo ha venido en carne, es de Dios; y todo espíritu que no confiesa que Jesucristo ha venido en carne, no es de Dios&quot; (4:2–3). Nosotros le amamos a él, porque él nos amó primero (4:19). El que no ama a su hermano a quien ha visto, no puede amar a Dios a quien no ha visto (4:20). El capítulo 5 presenta la victoria de la fe: todo el que es nacido de Dios vence al mundo (5:4). El que cree que Jesús es el Hijo de Dios, es nacido de Dios (5:5). Testigos en el cielo: el Padre, la Palabra y el Espíritu Santo (5:7). Testigos en la tierra: el agua, la sangre y el Espíritu (5:8). El que tiene al Hijo, tiene la vida; el que no tiene al Hijo de Dios, no tiene la vida (5:12). Si sabemos que él nos oye, sabemos que tenemos las peticiones que le hayamos hecho (5:15). Hay pecado de muerte (5:16–17). Todo el que es nacido de Dios no practica el pecado (5:18). Sabemos que somos de Dios, y el mundo entero está bajo el maligno (5:19). El que conoce al Hijo de Dios, conoce también al Padre. La gracia sea con todos.</p>\n<p>Temas clave: Vida, luz, amor, pecado, anticristo, propiciación, ungión, fe y victoria.</p>",
+  "2 Juan": "<h3>Biografía — 2 Juan</h3>\n<p>Autor tradicional: Juan, el anciano. Fecha estimada: c. 85–95 d.C. Capítulos: 1. Género: Epístola personal.</p>\n<p>2 Juan es una carta breve a la &quot;dama elegida y a sus hijos&quot;, probablemente una iglesia doméstica. Juan se regocija de hallar a algunos de sus hijos andando en la verdad (vers. 4). El mandamiento es el de siempre: amarnos unos a otros (vers. 5). El amor consiste en andar según sus mandamientos (vers. 6). La advertencia central es contra los engañadores que no confiesan que Jesucristo viene en carne: este es el engañador y el anticristo (vers. 7). Cuidado con perder el galardón (vers. 8). No recibáis en casa a quienes traen esta doctrina, ni les saludéis (vers. 10). El que les saluda, participa en sus malas obras (vers. 11). La carta cierra con la esperanza de visitar y hablar cara a cara, y la saludación de los hijos de tu hermana elegida (vers. 12–13).</p>\n<p>Temas clave: Verdad, amor, doctrina de Cristo, hospitalidad y anticristo.</p>",
+  "3 Juan": "<h3>Biografía — 3 Juan</h3>\n<p>Autor tradicional: Juan, el anciano. Fecha estimada: c. 85–95 d.C. Capítulos: 1. Género: Epístola personal.</p>\n<p>3 Juan es una carta personal a Gayo, un amigo de Juan. Juan se regocija de que los hermanos den testimonio de la verdad que hay en él, y de que él ande en la verdad (vers. 3–4). La carta alaba a Gayo por su hospitalidad hacia los misioneros que viajan: &quot;Tú harás bien en enviarlos como es digno de la causa de Dios, porque por causa del Nombre salieron, sin aceptar nada de los gentiles&quot; (vers. 6–7). Por tanto, debemos recibir a los que son como ellos (vers. 8). El contraste es con Diótrefes, que ama tener el primado entre ellos, no recibe a los hermanos, y excomulga a los que lo hacen (vers. 9–10). Juan promete corregir esto personalmente. Demetrio tiene buen testimonio de todos, y de la verdad misma (vers. 12). La carta cierra con la esperanza de visitar pronto y la saludación de los amigos (vers. 13–14). 3 Juan es el único libro del Nuevo Testamento que no menciona a Dios ni a Jesucristo explícitamente (aunque &quot;el Nombre&quot; y &quot;la verdad&quot; lo implican).</p>\n<p>Temas clave: Hospitalidad, misiones, autoridad eclesial, verdad y testimonio.</p>",
+  "Judas": "<h3>Biografía — Judas</h3>\n<p>Autor tradicional: Judas, hermano de Santiago y del Señor. Fecha estimada: c. 65–80 d.C. Capítulos: 1. Género: Epístola general/polemica.</p>\n<p>Judas es una carta breve y vehemente contra los falsos maestros. El autor se identifica como &quot;siervo de Jesucristo, y hermano de Santiago&quot; (vers. 1). La carta es para los que están santificados en Dios el Padre, guardados por Jesucristo, y llamados (vers. 1). Judas deseaba escribir sobre la salvación común, pero se ve obligado a exhortar a contender por la fe que ha sido una vez dada a los santos (vers. 3). Hay ciertos hombres que se han infiltrado, impíos, que convierten la gracia de Dios en libertinaje, y niegan a Jesucristo, único soberano y Señor nuestro (vers. 4). El juicio sobre ellos es seguro: los ángeles que no guardaron su dignidad fueron reservados en prisiones eternas; Sodoma y Gomorra fueron destruidas por fuego eterno (vers. 6–7). Estos soñadores contaminan la carne, desprecian la autoridad, y dicen injurias contra las potestades gloriosas (vers. 8). Micael, el arcángel, no se atrevió a pronunciar juicio blasfemo contra el diablo, sino que dijo: &quot;El Señor te reprenda&quot; (vers. 9). Son como estrellas errantes para quienes está reservada la oscuridad de las tinieblas para siempre (vers. 13). Enoc, el séptimo desde Adán, profetizó sobre estos: &quot;He aquí, viene el Señor con diez millares de sus santos, para ejecutar juicio contra todos&quot; (vers. 14–15). Son murmuradores, quejumbrosos, que andan según sus propios deseos; su boca habla cosas grandísimas, y admiran a las personas por causa del interés (vers. 16). Amados, edificaos sobre vuestra santísima fe, orando en el Espíritu Santo; guardaos en el amor de Dios, esperando la misericordia de nuestro Señor Jesucristo para vida eterna (vers. 20–21). A los que dudan, convencedlos; a los que están en el fuego, arrebatadlos; a los demás, tened misericordia con temor (vers. 22–23). Al único y sabio Dios, por medio de Jesucristo nuestro Señor, sea gloria y majestad, dominio y poder, antes de todos los tiempos, ahora, y por todos los siglos. Amén (vers. 25).</p>\n<p>Temas clave: Contender por la fe, falsos maestros, juicio, Enoch, arcángeles, edificación y gloria.</p>",
+  "Apocalipsis": "<h3>Biografía — Apocalipsis</h3>\n<p>Autor tradicional: Juan, el discípulo amado. Fecha estimada: c. 95–96 d.C. Capítulos: 22. Género: Apocalipsis/profecía.</p>\n<p>Apocalipsis (hebreo Revelation, griego Apokálypsis) es la revelación de Jesucristo que Dios le dio para mostrar a sus siervos las cosas que deben suceder pronto (1:1). Escrita en la isla de Patmos, donde Juan estaba por la palabra de Dios y el testimonio de Jesucristo (1:9). La estructura es una serie de visiones, números y símbolos. El capítulo 1 describe al Hijo del Hombre entre los siete candeleros de oro, con vestidura hasta los pies, ceñido el pecho con un cinto de oro, cabellos blancos como la lana, ojos como llama de fuego, pies como bronce bruñido, y voz como de muchas aguas. Tiene en su diestra siete estrellas, y de su boca sale una espada aguda de dos filos; su rostro es como el sol cuando resplandece en su fuerza (1:12–16). El mandato es escribir las cosas que has visto, las que son, y las que han de ser después de estas (1:19).</p>\n<p>Las cartas a las siete iglesias de Asia (caps. 2–3) son diagnósticos pastoreles: Éfeso (amor perdido), Esmirna (persecución), Pérgamo (compromiso con el mundo), Tiatira (idolatría y inmoralidad), Sardis (muerta), Filadelfia (fidelidad), Laodicea (tibieza). El que venciere recibirá promesas específicas. El capítulo 4 describe el trono celestial con los 24 ancianos, los cuatro seres vivientes (león, becerro, rostro humano, águila) y la adoración continua. El capítulo 5 presenta el libro con siete sellos que nadie puede abrir, excepto el Cordero de Dios que fue inmolado y vive, con siete cuernos y siete ojos (5:6). Los capítulos 6–16 describen la apertura de los siete sellos, las siete trompetas y las siete copas. Los cuatro jinetes (conquista, guerra, hambruna y muerte, caballo pálido) son los sellos 1–4. El quinto sello es el clamor de las almas de los mártires (6:9–11). El sexto sello es el cataclismo cósmico (6:12–17). Los 144.000 sellados de Israel (7:1–8) y la gran multitud de todas las naciones (7:9–17) son la iglesia triunfante. La séptima trometa anuncia el reino de Dios y su Cristo (11:15).</p>\n<p>La visión de la mujer y el dragón (cap. 12): la mujer vestida de sol, con la luna bajo sus pies, y una corona de doce estrellas, da a luz al varón que ha de regir todas las naciones. El dragón (Satanás) intenta devorar al hijo, pero es arrojado al cielo. La bestia del mar (13:1–10) tiene siete cabezas y diez cuernos, y recibe poder del dragón. La bestia de la tierra (el falso profeta, 13:11–18) hace que la tierra adore a la primera bestia y marca con el número 666 (13:18). Los 144.000 en el monte Sion (14:1–5), los tres ángeles que proclaman el evangelio eterno (14:6–13), y la cosecha de la ira (14:14–20) preceden a las siete copas de la ira de Dios (caps. 15–16). Babilonia la Grande (caps. 17–18) es la prostituta sentada sobre la bestia escarlata, ebria de la sangre de los santos. Su caída es celebrada (18:1–24). El júbilo celestial (cap. 19) incluye la boda del Cordero (19:7–9) y la victoria del Jinete Fiel y Veraz sobre la bestia y el falso profeta (19:11–21). Los mil años (cap. 20): Satanás es encadenado, los mártires reina con Cristo, y luego Satanás es soltado para la batalla final de Gog y Magog. El juicio del gran tranco blanco (20:11–15) abre los libros; el que no se halló inscrito en el libro de la vida fue lanzado al lago de fuego.</p>\n<p>Los capítulos 21–22 describen la nueva creación: &quot;He aquí el tabernáculo de Dios con los hombres, y él habitará con ellos&quot; (21:3). La nueva Jerusalén desciende del cielo, como ataviada de esposa para su marido (21:2). La ciudad es cuadrada, de 12.000 estadios de longitud, ancho y alto, con doce puertas (nombres de las tribus) y doce cimientos (nombres de los apóstoles). No tiene necesidad de sol ni luna, porque la gloria de Dios la ilumina (21:23). El río de agua de vida procede del trono de Dios y del Cordero, y a cada lado del río está el árbol de la vida (22:1–2). &quot;He aquí, yo vengo pronto, y mi galardón conmigo, para recompensar a cada uno según sea su obra&quot; (22:12). El que da testimonio de estas cosas dice: Ciertamente vengo en breve. Amén; sí, ven, Señor Jesús (22:20). La gracia del Señor Jesucristo sea con todos los santos. Amén (22:21).</p>\n<p>Temas clave: Revelación, juicio, tribulación, redención, reino, nueva creación, esperanza y venida de Cristo.</p>"
+};
+
+function initTheme() {
+const saved=localStorage.getItem('biblia-theme');
+if(saved=== 'dark') {
+document.body.setAttribute('data-theme', 'dark');
+themeBtn.textContent= '☀️';
+}
+}
+function toggleTheme() {
+const isDark=document.body.getAttribute('data-theme') === 'dark';
+if(isDark) {
+document.body.removeAttribute('data-theme');
+localStorage.setItem('biblia-theme', 'light');
+themeBtn.textContent= '🌙';
+}else{
+document.body.setAttribute('data-theme', 'dark');
+localStorage.setItem('biblia-theme', 'dark');
+themeBtn.textContent= '☀️';
+}
+}
+
+function initFont() {
+const saved=localStorage.getItem('biblia-font');
+if(saved){fontSize=saved;document.body.setAttribute('data-font', 'fs-' +saved); }
+}
+function cycleFont() {
+const sizes= ['small','normal','large'];
+let idx=sizes.indexOf(fontSize);
+idx= (idx+ 1) %sizes.length;
+fontSize=sizes[idx];
+document.body.setAttribute('data-font', 'fs-' +fontSize);
+localStorage.setItem('biblia-font',fontSize);
+}
+
+function initFontFamily() {
+const saved=localStorage.getItem('biblia-font-family');
+if(saved) {
+fontFamily=saved;
+document.body.setAttribute('data-font-family',fontFamily);
+}
+}
+function cycleFontFamily() {
+const families= ['serif', 'sans', 'mono'];
+let idx=families.indexOf(fontFamily);
+idx= (idx+ 1) %families.length;
+fontFamily=families[idx];
+document.body.setAttribute('data-font-family',fontFamily);
+localStorage.setItem('biblia-font-family',fontFamily);
+}
+
+function savePos() {
+localStorage.setItem('biblia-pos',JSON.stringify({book:currentBook,chapter:currentChapter}));
+}
+function loadPos() {
+try{return JSON.parse(localStorage.getItem('biblia-pos')); }catch{return null; }
+}
+
+function toggleSidebar() {
+sidebarVisible= !sidebarVisible;
+if(sidebarVisible) {
+sidebar.classList.remove('hidden');
+showSidebarBtn.classList.remove('visible');
+topbarSpacer.classList.remove('sidebar-hidden');
+toggleSidebarBtn.innerHTML= '◀';
+toggleSidebarBtn.title= 'Ocultar libros';
+sidebarOverlay.classList.add('visible');
+}else{
+sidebar.classList.add('hidden');
+showSidebarBtn.classList.add('visible');
+topbarSpacer.classList.add('sidebar-hidden');
+toggleSidebarBtn.innerHTML= '◀';
+sidebarOverlay.classList.remove('visible');
+}
+localStorage.setItem('biblia-sidebar',sidebarVisible?'1' :'0');
+}
+
+function closeSidebarMobile() {
+if(window.innerWidth<= 768 &&sidebarVisible) {
+toggleSidebar();
+}
+}
+
+function initSidebarState() {
+const saved=localStorage.getItem('biblia-sidebar');
+if(saved=== '0'){sidebarVisible= true;toggleSidebar(); }
+}
+
+async function loadBible() {
+try {
+const res =await fetch(BIBLE_URL);
+if(!res.ok)throw new Error('No se pudo cargar la Biblia');
+bible=await res.json();
+// Normalizar nombres de los evangelios: el JSON original usa "S. Mateo", "S. Marcos", "S. Lucas", "S.Juan"
+const nameFix= {
+'S. Mateo': 'Mateo',
+'S. Marcos': 'Marcos',
+'S. Lucas': 'Lucas',
+'S. Juan': 'Juan'
+};
+for(const [oldName,newName] of Object.entries(nameFix)) {
+if(bible[oldName]) {
+bible[newName] =bible[oldName];
+delete bible[oldName];
+}
+}
+// Normalizar Apocalipsis si tiene nombre alternativo en el JSON
+for(const key of Object.keys(bible)) {
+const lowerKey=key.toLowerCase().trim();
+if((lowerKey.includes('apocalipsis') ||lowerKey.includes('revelación') ||lowerKey.includes('revelacion') ||lowerKey.includes('revelation') ||lowerKey.includes('apocalypse')) &&key!== 'Apocalipsis') {
+bible['Apocalipsis'] =bible[key];
+delete bible[key];
+break;
+}
+}
+books=bookOrder.filter(b =>bible[b]);
+loading.style.display= 'none';
+renderBooks();
+initSidebarState();
+const pos=loadPos();
+if(pos&&bible[pos.book])goTo(pos.book,pos.chapter);
+else goTo(books[0], 1);
+} catch (e) {
+loading.innerHTML= `<p style="color:#c44">Error al cargar: ${e.message}<br>Verifica tu conexión a Internet.</p>`;
+}
+}
+
+function renderBooks() {
+bookList.innerHTML= '';
+const ot=books.slice(0, 39);
+const nt=books.slice(39);
+const filter=bookFilter.value.trim().toLowerCase();
+
+function stripAccents(str) {
+return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function addGroup(label,list) {
+const normFilter=stripAccents(filter);
+const filtered=filter?list.filter(b =>stripAccents(b.toLowerCase()).includes(normFilter)) :list;
+if(!filtered.length)return;
+const lbl=document.createElement('div');
+lbl.className= 'book-group-label';
+lbl.textContent=label;
+bookList.appendChild(lbl);
+filtered.forEach(b => {
+const div=document.createElement('div');
+div.className= 'book-item' + (b ===currentBook?' active' :'');
+div.textContent= b;
+div.onclick= () =>{goTo(b, 1);closeSidebarMobile(); };
+bookList.appendChild(div);
+});
+}
+addGroup('Antiguo Testamento',ot);
+addGroup('Nuevo Testamento',nt);
+}
+
+function renderChapters() {
+chapterBar.innerHTML= '';
+if(!currentBook|| !bible[currentBook])return;
+const chapters=Object.keys(bible[currentBook]).map(Number).sort((a, b) => a - b);
+chapters.forEach(ch => {
+const btn=document.createElement('button');
+btn.className= 'chapter-tab' + (ch ===currentChapter?' active' :'');
+btn.textContent= ch;
+btn.onclick= () =>goTo(currentBook, ch);
+chapterBar.appendChild(btn);
+});
+setTimeout(() => {
+const active =chapterBar.querySelector('.chapter-tab.active');
+if(active)active.scrollIntoView({behavior: 'smooth',inline: 'center', block: 'nearest' });
+}, 50);
+}
+
+const rvr1960BookTitles = {
+  'Génesis': 'El primer libro de Moisés, llamado Génesis',
+  'Éxodo': 'El segundo libro de Moisés, llamado Éxodo',
+  'Levítico': 'El tercer libro de Moisés, llamado Levítico',
+  'Números': 'El cuarto libro de Moisés, llamado Números',
+  'Deuteronomio': 'El quinto libro de Moisés, llamado Deuteronomio',
+  'Josué': 'El libro de Josué',
+  'Jueces': 'El libro de los Jueces',
+  'Rut': 'El libro de Rut',
+  '1 Samuel': 'El primer libro de Samuel',
+  '2 Samuel': 'El segundo libro de Samuel',
+  '1 Reyes': 'El primer libro de los Reyes',
+  '2 Reyes': 'El segundo libro de los Reyes',
+  '1 Crónicas': 'El primer libro de las Crónicas',
+  '2 Crónicas': 'El segundo libro de las Crónicas',
+  'Esdras': 'El libro de Esdras',
+  'Nehemías': 'El libro de Nehemías',
+  'Ester': 'El libro de Ester',
+  'Job': 'El libro de Job',
+  'Salmos': 'El libro de los Salmos',
+  'Proverbios': 'Los Proverbios de Salomón',
+  'Eclesiastés': 'El libro del Eclesiastés',
+  'Cantares': 'El Cantar de los Cantares de Salomón',
+  'Isaías': 'El libro del profeta Isaías',
+  'Jeremías': 'El libro del profeta Jeremías',
+  'Lamentaciones': 'El libro de las Lamentaciones de Jeremías',
+  'Ezequiel': 'El libro del profeta Ezequiel',
+  'Daniel': 'El libro del profeta Daniel',
+  'Oseas': 'El libro del profeta Oseas',
+  'Joel': 'El libro del profeta Joel',
+  'Amós': 'El libro del profeta Amós',
+  'Abdías': 'El libro del profeta Abdías',
+  'Jonás': 'El libro del profeta Jonás',
+  'Miqueas': 'El libro del profeta Miqueas',
+  'Nahúm': 'El libro del profeta Nahúm',
+  'Habacuc': 'El libro del profeta Habacuc',
+  'Sofonías': 'El libro del profeta Sofonías',
+  'Hageo': 'El libro del profeta Ageo',
+  'Zacarías': 'El libro del profeta Zacarías',
+  'Malaquías': 'El libro del profeta Malaquías',
+  'Mateo': 'El Evangelio según San Mateo',
+  'Marcos': 'El Evangelio según San Marcos',
+  'Lucas': 'El Evangelio según San Lucas',
+  'Juan': 'El Evangelio según San Juan',
+  'Hechos': 'Los Hechos de los Apóstoles',
+  'Romanos': 'La Epístola de Pablo a los Romanos',
+  '1 Corintios': 'La primera Epístola de Pablo a los Corintios',
+  '2 Corintios': 'La segunda Epístola de Pablo a los Corintios',
+  'Gálatas': 'La Epístola de Pablo a los Gálatas',
+  'Efesios': 'La Epístola de Pablo a los Efesios',
+  'Filipenses': 'La Epístola de Pablo a los Filipenses',
+  'Colosenses': 'La Epístola de Pablo a los Colosenses',
+  '1 Tesalonicenses': 'La primera Epístola de Pablo a los Tesalonicenses',
+  '2 Tesalonicenses': 'La segunda Epístola de Pablo a los Tesalonicenses',
+  '1 Timoteo': 'La primera Epístola de Pablo a Timoteo',
+  '2 Timoteo': 'La segunda Epístola de Pablo a Timoteo',
+  'Tito': 'La Epístola de Pablo a Tito',
+  'Filemón': 'La Epístola de Pablo a Filemón',
+  'Hebreos': 'La Epístola a los Hebreos',
+  'Santiago': 'La Epístola de Santiago',
+  '1 Pedro': 'La primera Epístola de Pedro',
+  '2 Pedro': 'La segunda Epístola de Pedro',
+  '1 Juan': 'La primera Epístola de Juan',
+  '2 Juan': 'La segunda Epístola de Juan',
+  '3 Juan': 'La tercera Epístola de Juan',
+  'Judas': 'La Epístola de Judas',
+  'Apocalipsis': 'El Apocalipsis de San Juan'
+};
+
+function goTo(book,chapter) {
+if(!bible[book])return;
+currentBook=book;
+currentChapter=chapter;
+const chData=bible[book][String(chapter)];
+if(!chData)return;
+const fullBookTitle = rvr1960BookTitles[book] || book;
+contentTitle.innerHTML = `${fullBookTitle}<br><span style="display:block;font-size:0.65em;font-weight:500;color:var(--fg);opacity:0.75;margin-top:6px;font-family:var(--font-ui);">Capítulo ${chapter}</span>`;
+currentTitle.textContent= `${book} ${chapter}`;
+versesDiv.innerHTML= '';
+// Mostrar botón para abrir la biografía en el capítulo 1 de cada libro
+if (currentChapter === 1 && bookBios[currentBook]) {
+  const bioBtn = document.createElement('button');
+  bioBtn.className = 'bio-btn';
+  bioBtn.innerHTML = '📖 Ver biografía del libro';
+  bioBtn.onclick = () => openBioModal(currentBook);
+  versesDiv.appendChild(bioBtn);
+}
+Object.keys(chData).map(Number).sort((a, b) => a - b).forEach(v => {
+const p =document.createElement('p');
+p.className= 'verse';
+p.innerHTML= `<span class="verse-num">${v}</span>${chData[String(v)]}`;
+versesDiv.appendChild(p);
+});
+renderBooks();
+renderChapters();
+updateNav();
+savePos();
+backBtn.style.display= 'none';
+prevBtn.style.display= '';
+nextBtn.style.display= '';
+mobileBackBtn.classList.remove('visible');
+document.getElementById('content').scrollTop= 0;
+closeSidebarMobile();
+}
+
+function updateNav() {
+const bookIdx=books.indexOf(currentBook);
+const chapters=Object.keys(bible[currentBook]).map(Number).sort((a, b) => a - b);
+const chIdx=chapters.indexOf(currentChapter);
+prevBtn.disabled= (bookIdx=== 0 &&chIdx=== 0);
+nextBtn.disabled= (bookIdx===books.length- 1 &&chIdx===chapters.length- 1);
+}
+
+function prevChapter() {
+const chapters=Object.keys(bible[currentBook]).map(Number).sort((a, b) => a - b);
+const chIdx=chapters.indexOf(currentChapter);
+if(chIdx> 0)goTo(currentBook,chapters[chIdx- 1]);
+else{
+const bIdx=books.indexOf(currentBook);
+if(bIdx> 0) {
+const prevBook=books[bIdx- 1];
+const prevChs=Object.keys(bible[prevBook]).map(Number).sort((a, b) => a - b);
+goTo(prevBook,prevChs[prevChs.length- 1]);
+}
+}
+}
+function nextChapter() {
+const chapters=Object.keys(bible[currentBook]).map(Number).sort((a, b) => a - b);
+const chIdx=chapters.indexOf(currentChapter);
+if(chIdx<chapters.length- 1)goTo(currentBook,chapters[chIdx+ 1]);
+else{
+const bIdx=books.indexOf(currentBook);
+if(bIdx<books.length- 1)goTo(books[bIdx+ 1], 1);
+}
+}
+
+function normalizeBookInput(input) {
+return input.toLowerCase().replace(/^s\.?\s*/, '').trim();
+}
+
+function parseReference(q) {
+const refMatch=q.match(/^(.*?)\s+(\d+)(?::(\d+))?$/);
+if(!refMatch)return null;
+const bookPart=normalizeBookInput(refMatch[1]);
+const chapter=parseInt(refMatch[2]);
+const verse =refMatch[3] ?parseInt(refMatch[3]) :null;
+if(!bookPart)return null;
+
+let book=books.find(b =>normalizeBookInput(b) ===bookPart);
+if(!book) {
+const candidates =books.filter(b => {
+const nb=normalizeBookInput(b);
+return nb.startsWith(bookPart+ ' ') ||bookPart.startsWith(nb+ ' ');
+});
+if(candidates.length) {
+candidates.sort((a, b) =>normalizeBookInput(b).length-normalizeBookInput(a).length);
+book=candidates[0];
+}
+}
+if(!book|| !bible[book][String(chapter)])return null;
+return{book,chapter,verse };
+}
+
+function doSearch() {
+const q =searchInput.value.trim().toLowerCase();
+searchInput.value= '';
+if(!q)return;
+const ref=parseReference(q);
+if(ref) {
+goTo(ref.book,ref.chapter);
+if(ref.verse) {
+setTimeout(() => {
+const nums=document.querySelectorAll('.verse-num');
+nums.forEach(n =>{if(n.textContent==ref.verse)n.scrollIntoView({behavior: 'smooth', block: 'center' }); });
+}, 100);
+}
+return;
+}
+contentTitle.textContent= `Resultados: "${q}"`;
+currentTitle.textContent= 'Búsqueda';
+versesDiv.innerHTML= '';
+let count= 0;
+for(const book of books) {
+for(const chStr of Object.keys(bible[book]).sort((a, b) => Number(a) - Number(b))) {
+const ch = Number(chStr);
+for(const vStr of Object.keys(bible[book][chStr]).sort((a, b) => Number(a) - Number(b))) {
+const v = Number(vStr);
+const text=bible[book][chStr][vStr].toLowerCase();
+if(text.includes(q)) {
+count++;
+const div=document.createElement('div');
+div.className= 'search-result';
+const highlighted=bible[book][chStr][vStr].replace(new RegExp(`(${q})`, 'gi'), '<span class="verse-highlight">$1</span>');
+div.innerHTML= `<div class="search-ref">${book} ${ch}:${v}</div><div class="search-snippet">${highlighted}</div>`;
+div.onclick= () =>{goTo(book, ch); };
+versesDiv.appendChild(div);
+if(count>= 100) break;
+}
+}
+if(count>= 100) break;
+}
+if(count>= 100) break;
+}
+if(count=== 0)versesDiv.innerHTML= '<p style="opacity:.7">No se encontraron resultados.</p>';
+chapterBar.innerHTML= '';
+prevBtn.style.display= 'none';
+nextBtn.style.display= 'none';
+backBtn.style.display= '';
+mobileBackBtn.classList.add('visible');
+}
+
+const bioModal = document.getElementById('bio-modal');
+const bioModalBody = document.getElementById('bio-modal-body');
+const bioModalClose = document.getElementById('bio-modal-close');
+
+function openBioModal(book) {
+  if (!bookBios[book]) return;
+  bioModalBody.innerHTML = bookBios[book];
+  bioModal.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+function closeBioModal() {
+  bioModal.classList.remove('visible');
+  bioModalBody.innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+bioModalClose.onclick = closeBioModal;
+bioModal.onclick = (e) => {
+  if (e.target === bioModal) closeBioModal();
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && bioModal.classList.contains('visible')) closeBioModal();
+});
+
+toggleSidebarBtn.onclick=toggleSidebar;
+showSidebarBtn.onclick=toggleSidebar;
+bookFilter.oninput=renderBooks;
+prevBtn.onclick=prevChapter;
+nextBtn.onclick=nextChapter;
+backBtn.onclick= () =>{goTo(currentBook,currentChapter); };
+searchBtn.onclick=doSearch;
+searchInput.onkeydown= e =>{if(e.key=== 'Enter')doSearch(); };
+themeBtn.onclick=toggleTheme;
+fontFamilyBtn.onclick=cycleFontFamily;
+mobileBackBtn.onclick= () =>{goTo(currentBook,currentChapter); };
+document.addEventListener('keydown', e => {
+if(e.target.tagName=== 'INPUT')return;
+if(e.key=== 'ArrowLeft')prevChapter();
+if(e.key=== 'ArrowRight')nextChapter();
+});
+
+initTheme();
+initFont();
+initFontFamily();
+loadBible();
+})();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"f0f03d0605bf45f1a3b17cf7d5e6861f"}' crossorigin="anonymous"></script>
+</body>
+</html>
